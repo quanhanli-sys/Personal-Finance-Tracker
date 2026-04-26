@@ -945,18 +945,17 @@
         ];
         fns.forEach(function(name) {
             proxy[name] = function(arg) {
-                var url = getScriptUrl();
-                if (!url) { _onFail(new Error("No Script URL set")); return; }
-                var body = { action: name };
-                if (arg !== undefined) body.data = arg;
-                fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                })
+                var base = getScriptUrl();
+                if (!base) { _onFail(new Error("No Script URL set")); return; }
+                // Use GET with URL params — avoids CORS preflight that blocks POST
+                var params = "?action=" + encodeURIComponent(name);
+                if (arg !== undefined) {
+                    params += "&data=" + encodeURIComponent(JSON.stringify(arg));
+                }
+                var url = base + params;
+                fetch(url, { method: "GET", redirect: "follow" })
                 .then(function(r) { return r.json(); })
                 .then(function(result) {
-                    // Server wraps response in { result: ... }
                     _onSuccess(result.result !== undefined ? result.result : result);
                 })
                 .catch(function(e) { _onFail(e); });
