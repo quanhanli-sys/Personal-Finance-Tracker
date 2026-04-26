@@ -298,7 +298,42 @@
     <!-- ══════════════════════════════════════════════════════
          SCREEN 1 — LOG (transactions)
     ══════════════════════════════════════════════════════ -->
-    <div class="screen active" id="screen-log">
+    
+    <!-- ── ONBOARDING SCREEN ─────────────────────────────────── -->
+    <div id="onboardingScreen" style="display:none;position:fixed;inset:0;background:#0A0A0F;
+         z-index:9999;flex-direction:column;align-items:center;justify-content:center;padding:32px;box-sizing:border-box;">
+        <div style="max-width:400px;width:100%;text-align:center">
+            <div style="font-size:48px;margin-bottom:16px">💰</div>
+            <h1 style="color:#FFFFFF;font-family:Arial,sans-serif;font-size:28px;font-weight:700;margin:0 0 8px">
+                Financials
+            </h1>
+            <p style="color:#8E8E93;font-family:Arial,sans-serif;font-size:15px;margin:0 0 32px;line-height:1.5">
+                Connect your Google Sheet to get started.
+                Paste your Apps Script deployment URL below.
+            </p>
+            <input id="scriptUrlInput" type="url"
+                placeholder="https://script.google.com/macros/s/…/exec"
+                style="width:100%;box-sizing:border-box;padding:14px 16px;background:#1C1C1E;
+                       border:1px solid #3A3A3C;border-radius:12px;color:#FFFFFF;
+                       font-family:Arial,sans-serif;font-size:15px;outline:none;margin-bottom:12px">
+            <button onclick="connectScript()"
+                style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:12px;
+                       color:#FFFFFF;font-family:Arial,sans-serif;font-size:16px;font-weight:700;
+                       cursor:pointer;margin-bottom:12px">
+                Connect
+            </button>
+            <p id="onboardingError" style="color:#FF453A;font-family:Arial,sans-serif;font-size:13px;
+               min-height:18px;margin:0 0 24px"></p>
+            <p style="color:#636366;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;margin:0">
+                Don't have a sheet yet?<br>
+                <a href="https://github.com/quanhanli-sys/financials" target="_blank"
+                   style="color:#5AC8FA">View setup guide →</a>
+            </p>
+        </div>
+    </div>
+
+<div id="appRoot" style="display:flex;flex-direction:column;height:100%">
+<div class="screen active" id="screen-log">
         <div class="header">
             <span class="header-title" id="txnTitle">Expense</span>
             <span class="save-flash" id="txnFlash">Saved ✓</span>
@@ -880,12 +915,96 @@
     var cachedLivePrice  = 0;
     var assetInputMode   = "dollars";
     var sellInputMode    = "shares";
+
+    // ── SCRIPT URL STORAGE ─────────────────────────────────────
+    var SCRIPT_URL_KEY = "financials_script_url";
+
+    function getScriptUrl() {
+        return localStorage.getItem(SCRIPT_URL_KEY) || "";
+    }
+
+    function setScriptUrl(url) {
+        localStorage.setItem(SCRIPT_URL_KEY, url.trim());
+    }
+
+    // ── GSR — gsr() replacement ────────────────────
+    // Drop-in replacement that uses fetch() instead of gsr().
+    // Usage: gsr().withSuccessHandler(fn).withFailureHandler(fn).functionName(arg)
+    function gsr() {
+        var _onSuccess = function() {};
+        var _onFail    = function() {};
+        var proxy = {
+            withSuccessHandler: function(fn) { _onSuccess = fn; return proxy; },
+            withFailureHandler: function(fn) { _onFail    = fn; return proxy; }
+        };
+        // For each server function, add a method on proxy
+        var fns = [
+            "getConfig","saveTransaction","saveAssetTrade","saveAssetUpdate",
+            "importHistoricalData","importAssetTrades","getLiveAssetPrice",
+            "getHeldShares","getCategoryHistory"
+        ];
+        fns.forEach(function(name) {
+            proxy[name] = function(arg) {
+                var url = getScriptUrl();
+                if (!url) { _onFail(new Error("No Script URL set")); return; }
+                var body = { action: name };
+                if (arg !== undefined) body.data = arg;
+                fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(result) {
+                    // Server wraps response in { result: ... }
+                    _onSuccess(result.result !== undefined ? result.result : result);
+                })
+                .catch(function(e) { _onFail(e); });
+            };
+        });
+        return proxy;
+    }
+
+    // ── ONBOARDING ─────────────────────────────────────────────
+    function showOnboarding() {
+        document.getElementById("onboardingScreen").style.display = "flex";
+        document.getElementById("appRoot").style.display = "none";
+    }
+
+    function hideOnboarding() {
+        document.getElementById("onboardingScreen").style.display = "none";
+        document.getElementById("appRoot").style.display = "flex";
+    }
+
+    function connectScript() {
+        var input = document.getElementById("scriptUrlInput").value.trim();
+        if (!input || input.indexOf("script.google.com") === -1) {
+            document.getElementById("onboardingError").textContent =
+                "That doesn't look like a valid Apps Script URL. Make sure it contains script.google.com";
+            return;
+        }
+        setScriptUrl(input);
+        document.getElementById("onboardingError").textContent = "";
+        hideOnboarding();
+        initApp();
+    }
+
+    function resetScriptUrl() {
+        if (confirm("Disconnect from current Sheet and enter a new Script URL?")) {
+            localStorage.removeItem(SCRIPT_URL_KEY);
+            showOnboarding();
+        }
+    }
+
     var priceLoading     = false;
     var cachedHeldShares = 0;
 
+    // ── INIT ─────────────────────────────────────────────────
+    function initApp() {
+
     // ── Load config ──────────────────────────────────────────
     try {
-        google.script.run
+        gsr()
             .withSuccessHandler(function(c) {
                 if (c.categories) {
                     // Merge server list with local defaults — ensure Utilities is always present
@@ -1126,7 +1245,7 @@
         document.getElementById("calcResultSub").textContent = "Looking up price…";
         document.getElementById("manualPriceRow").className  = "field-row hidden";
         try {
-            google.script.run
+            gsr()
                 .withSuccessHandler(function(r) {
                     priceLoading = false;
                     if (r.success && r.price > 0) {
@@ -1245,7 +1364,7 @@
         document.getElementById("sharesHeldLabel").textContent = "";
         document.getElementById("sellAllBtn").style.display    = "none";
         try {
-            google.script.run
+            gsr()
                 .withSuccessHandler(function(r) {
                     if (r && r.shares > 0) {
                         cachedHeldShares = r.shares;
@@ -1256,7 +1375,7 @@
                     }
                 })
                 .withFailureHandler(function() {})
-                .getHeldShares(ticker, state.assetAccount);
+                .getHeldShares({ticker: ticker, account: state.assetAccount});
         } catch(e) {}
     }
 
@@ -1488,20 +1607,20 @@
 
         try {
             if (entry.type === "transaction") {
-                google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
                     .saveTransaction(entry.payload);
             } else if (entry.type === "assetTrade") {
                 // tradeTimestamp passed in payload — server resolves historical price silently
-                google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
                     .saveAssetTrade(entry.payload);
             } else if (entry.type === "assetUpdate") {
-                google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
                     .saveAssetUpdate(entry.payload);
             } else if (entry.type === "assetImport") {
-                google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
                     .importAssetTrades(entry.payload);
             } else if (entry.type === "import") {
-                google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
                     .importHistoricalData(entry.payload);
             }
         } catch(e) { onFail(); }
@@ -2123,7 +2242,7 @@ function clearSynced() {
     function loadHistoryAndPreview() {
         // Try to get category history from server
         try {
-            google.script.run
+            gsr()
                 .withSuccessHandler(function(histMap) {
                     imp.historyMap = histMap || {};
                     buildPreviewRows();
@@ -2836,6 +2955,15 @@ function clearSynced() {
         importGoTo("imp-step-1", 1);
     }
 
+    } // end initApp
+
+    // ── BOOT ─────────────────────────────────────────────────
+    if (getScriptUrl()) {
+        initApp();
+    } else {
+        showOnboarding();
+    }
+
     window.onload = function() {
         // Init Lucide icons
         var today = localDateStr();
@@ -2850,5 +2978,7 @@ function clearSynced() {
         if (navigator.onLine && getAutoSync()) syncNow();
     };
     </script>
+
+</div>
 </body>
 </html>
