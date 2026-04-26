@@ -55,7 +55,7 @@ Make a copy of the template sheet:
 
 ### Step 4 — Connect the web app
 
-1. Open **[quanhanli-sys.github.io/financials](https://quanhanli-sys.github.io/financials)** on your phone
+1. Open **[quanhanli-sys.github.io/Personal-Finance-Tracker](https://quanhanli-sys.github.io/Personal-Finance-Tracker)** on your phone
 2. Paste your Apps Script URL into the connection screen
 3. Tap **Connect**
 
