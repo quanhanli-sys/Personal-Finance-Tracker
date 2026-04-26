@@ -1000,7 +1000,6 @@
 
     // ── INIT ─────────────────────────────────────────────────
     function initApp() {
-
     // ── Load config ──────────────────────────────────────────
     try {
         gsr()
@@ -1085,6 +1084,8 @@
     // ══════════════════════════════════════════════════════════
     // TRANSACTION TYPE
     // ══════════════════════════════════════════════════════════
+    } // end initApp
+
     function setType(t) {
         state.type = t;
         ["Expense","Income","Transfer"].forEach(function(x) {
@@ -2954,7 +2955,6 @@ function clearSynced() {
         importGoTo("imp-step-1", 1);
     }
 
-    } // end initApp
 
     // ── BOOT ─────────────────────────────────────────────────
     if (getScriptUrl()) {
