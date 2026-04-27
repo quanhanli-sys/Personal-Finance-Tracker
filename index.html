@@ -924,6 +924,11 @@
     var sellInputMode    = "shares";
 
     // ── SCRIPT URL STORAGE ─────────────────────────────────────
+    // ── VERSION CHECK ──────────────────────────────────────────
+    // Bump MIN_CODE_VERSION whenever Code.gs changes are required.
+    // Users running older Code.gs will see the update banner on next load.
+    var MIN_CODE_VERSION = "2.1.0";
+
     var SCRIPT_URL_KEY = "financials_script_url";
     var API_TOKEN_KEY  = "financials_api_token";
 
@@ -1083,11 +1088,64 @@
                 state.updateTicker = cfg.knownTickers[0] || "401k";
                 document.getElementById("updateTickerDisplay").textContent = state.updateTicker;
                 buildPickers();
+                // ── Version check ─────────────────────────────────────
+                if (c.codeVersion) {
+                    checkCodeVersion(c.codeVersion);
+                }
             })
             .getConfig();
     } catch(e) {}
 
     } // end initApp
+
+    // ══════════════════════════════════════════════════════════
+    // VERSION CHECK
+    // ══════════════════════════════════════════════════════════
+    function parseVersion(v) {
+        // Parse "2.1.0" → [2, 1, 0] for comparison
+        return (v || "0.0.0").split(".").map(Number);
+    }
+
+    function versionIsOlder(current, required) {
+        var c = parseVersion(current);
+        var r = parseVersion(required);
+        for (var i = 0; i < 3; i++) {
+            if ((c[i] || 0) < (r[i] || 0)) return true;
+            if ((c[i] || 0) > (r[i] || 0)) return false;
+        }
+        return false; // equal = not older
+    }
+
+    function checkCodeVersion(serverVersion) {
+        if (!versionIsOlder(serverVersion, MIN_CODE_VERSION)) return; // all good
+        // Show persistent amber banner at top
+        var existing = document.getElementById("versionBanner");
+        if (existing) return; // already showing
+        var banner = document.createElement("div");
+        banner.id = "versionBanner";
+        banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9997;" +
+            "background:#7A5800;color:#fff;font-family:Arial,sans-serif;font-size:13px;" +
+            "padding:10px 16px;display:flex;justify-content:space-between;align-items:center;" +
+            "cursor:pointer;";
+        banner.innerHTML =
+            "<span>⚠️ Code.gs update needed (" + serverVersion + " → " + MIN_CODE_VERSION + ")</span>" +
+            "<span style='text-decoration:underline;font-weight:700'>Tap for steps</span>";
+        banner.onclick = function() { showVersionModal(serverVersion); };
+        document.body.insertBefore(banner, document.body.firstChild);
+    }
+
+    function showVersionModal(serverVersion) {
+        var modal = document.getElementById("versionModal");
+        var desc  = document.getElementById("versionModalDesc");
+        desc.textContent = "Your Code.gs is version " + serverVersion +
+            " but this app requires " + MIN_CODE_VERSION +
+            ". Some features may not work correctly until you update.";
+        modal.style.display = "flex";
+    }
+
+    function closeVersionModal() {
+        document.getElementById("versionModal").style.display = "none";
+    }
 
     // ══════════════════════════════════════════════════════════
     // NAVIGATION
@@ -3099,5 +3157,41 @@ function clearSynced() {
         window.location.reload();
     }
     </script>
+
+    <!-- ── VERSION UPDATE MODAL ──────────────────────────────── -->
+    <div id="versionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+         z-index:9998;align-items:flex-end;justify-content:center;">
+        <div style="background:#1C1C1E;border-radius:20px 20px 0 0;padding:24px;width:100%;
+                    max-width:480px;box-sizing:border-box;max-height:80vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <span style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#fff">
+                    ⚠️ Code.gs Update Needed
+                </span>
+                <button onclick="closeVersionModal()"
+                    style="background:none;border:none;color:#8E8E93;font-size:24px;cursor:pointer;padding:0">×</button>
+            </div>
+            <p id="versionModalDesc" style="font-family:Arial,sans-serif;font-size:14px;
+               color:#8E8E93;margin:0 0 20px;line-height:1.6"></p>
+            <div style="background:#2C2C2E;border-radius:12px;padding:16px;margin-bottom:20px">
+                <p style="font-family:Arial,sans-serif;font-size:13px;font-weight:700;
+                   color:#fff;margin:0 0 12px">How to update:</p>
+                <ol style="font-family:Arial,sans-serif;font-size:13px;color:#8E8E93;
+                   margin:0;padding-left:18px;line-height:2">
+                    <li>Open your Google Sheet</li>
+                    <li>Extensions → Apps Script</li>
+                    <li>Replace all code with the latest <a href="https://github.com/quanhanli-sys/Personal-Finance-Tracker/blob/main/Code.gs"
+                        target="_blank" style="color:#5AC8FA">Code.gs from GitHub</a></li>
+                    <li>Save (Ctrl/Cmd + S)</li>
+                    <li>Deploy → Manage Deployments → pencil → New version → Deploy</li>
+                </ol>
+            </div>
+            <button onclick="closeVersionModal()"
+                style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:12px;
+                       color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:700;cursor:pointer">
+                Got it
+            </button>
+        </div>
+    </div>
+
 </body>
 </html>
