@@ -3210,14 +3210,17 @@ function clearSynced() {
         var rc  = rem >= 0 ? "pos" : "neg";
 
         // KPI PULSE
+        // All spend values are negative from the sheet — display as negative
+        var hasUnexp = kpi.unexpExp || kpi.unexpInc;
         var kpiH = '<div class="dash-card">' +
             '<div class="dash-card-title">Monthly Pulse &mdash; ' + (d.month||"") + '</div>' +
             '<div class="kpi-grid">' +
             '<div class="kpi-item"><div class="kpi-label">Take-Home</div><div class="kpi-val pos">' + dfmt(kpi.takeHome) + '</div></div>' +
             '<div class="kpi-item"><div class="kpi-label">Fixed</div><div class="kpi-val neg">' + dfmt(kpi.fixedExp) + '</div></div>' +
             '<div class="kpi-item"><div class="kpi-label">Variable Spent</div><div class="kpi-val neg">' + dfmt(kpi.varSpend) + '</div></div>' +
-            (kpi.unexpInc ? '<div class="kpi-item"><div class="kpi-label">Unexpected Income</div><div class="kpi-val pos">' + dfmt(kpi.unexpInc) + '</div></div>' : '') +
-            '<div class="kpi-item ' + (kpi.unexpInc ? '' : 'fw') + '"><div class="kpi-label">Remaining</div><div class="kpi-val ' + rc + '">' + dfmt(rem) + '</div></div>' +
+            (kpi.unexpExp ? '<div class="kpi-item"><div class="kpi-label">Unexpected Exp</div><div class="kpi-val neg">' + dfmt(kpi.unexpExp) + '</div></div>' : '') +
+            (kpi.unexpInc ? '<div class="kpi-item"><div class="kpi-label">Unexpected Inc</div><div class="kpi-val pos">' + dfmt(kpi.unexpInc) + '</div></div>' : '') +
+            '<div class="kpi-item ' + (hasUnexp ? '' : 'fw') + '"><div class="kpi-label">Remaining</div><div class="kpi-val ' + rc + '">' + dfmt(rem) + '</div></div>' +
             '</div></div>';
 
         // WEEKLY
@@ -3287,7 +3290,7 @@ function clearSynced() {
         var gain  = port.gain || 0;
         var gc    = gain >= 0 ? "#4CD964" : "#FF453A";
         var gs    = gain >= 0 ? "+" : "";
-        var hcards = (port.holdings||[]).slice(0,4).map(function(h) {
+        var hcards = (port.holdings||[]).map(function(h) {
             var hp  = (h.growthPct||0)*100;
             var hup = hp >= 0;
             return '<div class="hld-card">' +
