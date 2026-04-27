@@ -1,24 +1,21 @@
 // ============================================================
-//  Financials — Service Worker
-//  Cache version: bump this string whenever index.html changes
-//  to force all clients to pick up the new version.
+//  Financials — Service Worker  v2.1.0
+//  Bump CACHE_NAME when index.html changes to force update.
 // ============================================================
 
-var CACHE_NAME = "financials-v2.1.0";
-var APP_SHELL  = [
-  "./",
-  "./index.html"
+var CACHE_NAME  = "financials-v2.1.0";
+var REPO_PATH   = "/Personal-Finance-Tracker";
+var APP_SHELL   = [
+  REPO_PATH + "/",
+  REPO_PATH + "/index.html"
 ];
 
-// ── INSTALL: cache the app shell ─────────────────────────────
+// ── INSTALL ───────────────────────────────────────────────────
 self.addEventListener("install", function(e) {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(APP_SHELL);
-    }).then(function() {
-      // Take over immediately without waiting for old SW to die
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME)
+      .then(function(cache) { return cache.addAll(APP_SHELL); })
+      .then(function() { return self.skipWaiting(); })
   );
 });
 
@@ -27,43 +24,51 @@ self.addEventListener("activate", function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(key) { return key !== CACHE_NAME; })
-            .map(function(key)   { return caches.delete(key); })
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k)    { return caches.delete(k); })
       );
-    }).then(function() {
-      // Take control of all open tabs immediately
-      return self.clients.claim();
-    })
+    }).then(function() { return self.clients.claim(); })
   );
 });
 
-// ── FETCH: serve from cache, fall back to network ────────────
+// ── FETCH ─────────────────────────────────────────────────────
 self.addEventListener("fetch", function(e) {
   var url = new URL(e.request.url);
 
-  // Never intercept calls to Apps Script (those must go to network)
-  if (url.hostname.indexOf("script.google.com") > -1 ||
-      url.hostname.indexOf("googleusercontent.com") > -1) {
+  // ── Never intercept: Apps Script, Google APIs, CDN ───────
+  if (url.hostname.indexOf("script.google.com")    > -1 ||
+      url.hostname.indexOf("googleusercontent.com") > -1 ||
+      url.hostname.indexOf("cdnjs.cloudflare.com")  > -1 ||
+      url.hostname.indexOf("apis.google.com")        > -1) {
+    return; // let browser handle it normally
+  }
+
+  // ── Only cache same-origin requests to this repo ─────────
+  if (url.hostname !== self.location.hostname) {
     return;
   }
 
-  // For the app shell: cache-first strategy
-  // Serve from cache instantly, check network in background for updates
-  if (url.pathname === "/" ||
-      url.pathname.indexOf("index.html") > -1 ||
-      url.pathname.indexOf("/Personal-Finance-Tracker") > -1) {
+  // ── App shell (index.html and root path) ─────────────────
+  var isAppShell = (
+    url.pathname === REPO_PATH + "/" ||
+    url.pathname === REPO_PATH + "/index.html" ||
+    url.pathname === REPO_PATH
+  );
+
+  if (isAppShell) {
+    // Cache-first: serve instantly from cache, update in background
     e.respondWith(
       caches.open(CACHE_NAME).then(function(cache) {
         return cache.match(e.request).then(function(cached) {
-          var networkFetch = fetch(e.request).then(function(response) {
-            // Update cache with latest version in background
-            if (response && response.status === 200) {
-              cache.put(e.request, response.clone());
-            }
-            return response;
-          }).catch(function() { return cached; });
+          var networkFetch = fetch(e.request)
+            .then(function(response) {
+              if (response && response.status === 200) {
+                cache.put(e.request, response.clone());
+              }
+              return response;
+            })
+            .catch(function() { return cached; });
 
-          // Return cached immediately if available, else wait for network
           return cached || networkFetch;
         });
       })
@@ -71,7 +76,19 @@ self.addEventListener("fetch", function(e) {
     return;
   }
 
-  // For everything else: network-first, fall back to cache
+  // ── service-worker.js and manifest.json ──────────────────
+  // Network-first so updates are picked up immediately
+  if (url.pathname.indexOf("service-worker.js") > -1 ||
+      url.pathname.indexOf("manifest.json") > -1) {
+    e.respondWith(
+      fetch(e.request).catch(function() {
+        return caches.match(e.request);
+      })
+    );
+    return;
+  }
+
+  // ── Everything else on same origin: network-first ────────
   e.respondWith(
     fetch(e.request).catch(function() {
       return caches.match(e.request);
@@ -79,7 +96,7 @@ self.addEventListener("fetch", function(e) {
   );
 });
 
-// ── MESSAGE: allow app to trigger SW update check ────────────
+// ── MESSAGE ───────────────────────────────────────────────────
 self.addEventListener("message", function(e) {
   if (e.data && e.data.type === "SKIP_WAITING") {
     self.skipWaiting();
