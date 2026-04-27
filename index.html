@@ -316,7 +316,12 @@
                 style="width:100%;box-sizing:border-box;padding:14px 16px;background:#1C1C1E;
                        border:1px solid #3A3A3C;border-radius:12px;color:#FFFFFF;
                        font-family:Arial,sans-serif;font-size:15px;outline:none;margin-bottom:12px">
-            <button onclick="connectScript()"
+            <input id="apiTokenInput" type="text"
+                placeholder="API Token (from Financials → Get My API Token)"
+                style="width:100%;box-sizing:border-box;padding:14px 16px;background:#1C1C1E;
+                       border:1px solid #3A3A3C;border-radius:12px;color:#FFFFFF;
+                       font-family:Arial,sans-serif;font-size:15px;outline:none;margin-bottom:12px">
+            <button id="connectBtn" onclick="connectScript()"
                 style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:12px;
                        color:#FFFFFF;font-family:Arial,sans-serif;font-size:16px;font-weight:700;
                        cursor:pointer;margin-bottom:12px">
@@ -918,14 +923,12 @@
 
     // ── SCRIPT URL STORAGE ─────────────────────────────────────
     var SCRIPT_URL_KEY = "financials_script_url";
+    var API_TOKEN_KEY  = "financials_api_token";
 
-    function getScriptUrl() {
-        return localStorage.getItem(SCRIPT_URL_KEY) || "";
-    }
-
-    function setScriptUrl(url) {
-        localStorage.setItem(SCRIPT_URL_KEY, url.trim());
-    }
+    function getScriptUrl() { return localStorage.getItem(SCRIPT_URL_KEY) || ""; }
+    function setScriptUrl(url) { localStorage.setItem(SCRIPT_URL_KEY, url.trim()); }
+    function getApiToken()  { return localStorage.getItem(API_TOKEN_KEY)  || ""; }
+    function setApiToken(t) { localStorage.setItem(API_TOKEN_KEY, t.trim()); }
 
     // ── GSR — gsr() replacement ────────────────────
     // Drop-in replacement that uses fetch() instead of gsr().
@@ -949,6 +952,7 @@
                 if (!base) { _onFail(new Error("No Script URL set")); return; }
                 // Use GET with URL params — avoids CORS preflight that blocks POST
                 var params = "?action=" + encodeURIComponent(name);
+                params += "&token=" + encodeURIComponent(getApiToken());
                 if (arg !== undefined) {
                     params += "&data=" + encodeURIComponent(JSON.stringify(arg));
                 }
@@ -976,16 +980,51 @@
     }
 
     function connectScript() {
-        var input = document.getElementById("scriptUrlInput").value.trim();
-        if (!input || input.indexOf("script.google.com") === -1) {
+        var urlInput   = document.getElementById("scriptUrlInput").value.trim();
+        var tokenInput = document.getElementById("apiTokenInput").value.trim();
+        if (!urlInput || urlInput.indexOf("script.google.com") === -1) {
             document.getElementById("onboardingError").textContent =
-                "That doesn't look like a valid Apps Script URL. Make sure it contains script.google.com";
+                "That doesn't look like a valid Apps Script URL.";
             return;
         }
-        setScriptUrl(input);
+        if (!tokenInput) {
+            document.getElementById("onboardingError").textContent =
+                "Please enter your API token.";
+            return;
+        }
+        setScriptUrl(urlInput);
+        setApiToken(tokenInput);
         document.getElementById("onboardingError").textContent = "";
-        hideOnboarding();
-        initApp();
+        // Verify token works before proceeding
+        document.getElementById("connectBtn").textContent = "Connecting…";
+        document.getElementById("connectBtn").disabled = true;
+        fetch(urlInput + "?action=getVersion&token=" + encodeURIComponent(tokenInput), { redirect: "follow" })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.error === "Unauthorized") {
+                document.getElementById("onboardingError").textContent =
+                    "Token incorrect. Check it matches what was shown in the Financials menu.";
+                document.getElementById("connectBtn").textContent = "Connect";
+                document.getElementById("connectBtn").disabled = false;
+                return;
+            }
+            hideOnboarding();
+            initApp();
+        })
+        .catch(function() {
+            document.getElementById("onboardingError").textContent =
+                "Could not reach your Apps Script. Check the URL and try again.";
+            document.getElementById("connectBtn").textContent = "Connect";
+            document.getElementById("connectBtn").disabled = false;
+        });
+    }
+
+    function resetConnection() {
+        if (confirm("Disconnect and re-enter credentials?")) {
+            localStorage.removeItem(SCRIPT_URL_KEY);
+            localStorage.removeItem(API_TOKEN_KEY);
+            showOnboarding();
+        }
     }
 
     function resetScriptUrl() {
@@ -1025,6 +1064,8 @@
             })
             .getConfig();
     } catch(e) {}
+
+    } // end initApp
 
     // ══════════════════════════════════════════════════════════
     // NAVIGATION
@@ -1084,8 +1125,6 @@
     // ══════════════════════════════════════════════════════════
     // TRANSACTION TYPE
     // ══════════════════════════════════════════════════════════
-    } // end initApp
-
     function setType(t) {
         state.type = t;
         ["Expense","Income","Transfer"].forEach(function(x) {
@@ -2957,7 +2996,7 @@ function clearSynced() {
 
 
     // ── BOOT ─────────────────────────────────────────────────
-    if (getScriptUrl()) {
+    if (getScriptUrl() && getApiToken()) {
         initApp();
     } else {
         showOnboarding();
