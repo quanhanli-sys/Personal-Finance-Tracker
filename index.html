@@ -292,6 +292,67 @@
     .confirm-btn:active { opacity: 0.8; }
     .confirm-meta { text-align: center; font-size: 12px; color: #8E8E93; margin-top: 6px; }
 
+    
+    /* ── DASHBOARD ─────────────────────────────── */
+    .dash-container{padding:16px;overflow-y:auto;height:calc(100vh - 120px);padding-bottom:80px}
+    .dash-month{font-size:11px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+    .dash-card{background:#1C1C1E;border-radius:16px;border:1px solid #2A2A2C;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+    .dash-card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(46,107,62,.4),transparent)}
+    .dash-card-title{font-size:10px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+    .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .kpi-item{background:#0A0A0F;border-radius:10px;padding:12px;border:1px solid #2A2A2C}
+    .kpi-item.fw{grid-column:1/-1}
+    .kpi-label{font-size:10px;font-weight:600;color:#636366;letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
+    .kpi-val{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+    .kpi-val.pos{color:#4CD964}.kpi-val.neg{color:#FF453A}.kpi-val.warn{color:#FF9F0A}
+    .week-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #1A1A1C;gap:8px}
+    .week-row:last-child{border-bottom:none}
+    .week-row.curr{background:rgba(46,107,62,.1);border-radius:8px;padding:8px;margin:2px -4px;border-bottom:none}
+    .wk-lbl{font-size:11px;color:#8E8E93;min-width:76px}
+    .wk-bar-wrap{flex:1;height:5px;background:#2A2A2C;border-radius:3px;overflow:hidden}
+    .wk-bar{height:100%;border-radius:3px;transition:width .5s ease}
+    .wk-bar.ok{background:#2E6B3E}.wk-bar.warn{background:#FF9F0A}.wk-bar.over{background:#FF453A}
+    .wk-amt{font-size:12px;font-weight:700;color:#fff;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
+    .wk-rem{font-size:11px;min-width:50px;text-align:right;font-variant-numeric:tabular-nums}
+    .cat-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #1A1A1C;gap:8px}
+    .cat-row:last-child{border-bottom:none}
+    .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .cat-name{font-size:13px;color:#fff;flex:1}
+    .cat-bw{width:70px;height:4px;background:#2A2A2C;border-radius:2px;overflow:hidden}
+    .cat-b{height:100%;border-radius:2px}
+    .cat-amt{font-size:13px;font-weight:600;color:#FF453A;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+    .cat-amt.inc{color:#4CD964}
+    .txn-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #1A1A1C;gap:10px}
+    .txn-row:last-child{border-bottom:none}
+    .txn-icon{width:34px;height:34px;border-radius:10px;background:#2A2A2C;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .txn-info{flex:1;min-width:0}
+    .txn-desc{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .txn-meta{font-size:11px;color:#636366;margin-top:1px}
+    .txn-amt{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+    .txn-amt.exp{color:#FF453A}.txn-amt.inc{color:#4CD964}
+    .goal-row{padding:8px 0;border-bottom:1px solid #1A1A1C}
+    .goal-row:last-child{border-bottom:none}
+    .goal-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+    .goal-name{font-size:13px;font-weight:600;color:#fff}
+    .goal-pct{font-size:12px;font-weight:700;color:#4CD964}
+    .goal-bw{height:5px;background:#2A2A2C;border-radius:3px;overflow:hidden;margin-bottom:4px}
+    .goal-b{height:100%;border-radius:3px;background:linear-gradient(90deg,#2E6B3E,#4CD964);transition:width .8s ease}
+    .goal-ft{display:flex;justify-content:space-between}
+    .goal-cur{font-size:11px;color:#8E8E93}.goal-tgt{font-size:11px;color:#636366}
+    .port-hero{text-align:center;padding:8px 0 14px}
+    .port-val{font-size:30px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+    .port-gain{font-size:14px;margin-top:3px}
+    .port-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .hld-card{background:#0A0A0F;border-radius:10px;border:1px solid #2A2A2C;padding:10px}
+    .hld-ticker{font-size:13px;font-weight:700;color:#fff}
+    .hld-acct{font-size:10px;color:#636366;text-transform:uppercase;letter-spacing:.06em}
+    .hld-val{font-size:15px;font-weight:700;color:#fff;margin-top:3px;font-variant-numeric:tabular-nums}
+    .hld-pct{font-size:11px;font-weight:600;margin-top:2px}
+    .hld-pct.up{color:#4CD964}.hld-pct.dn{color:#FF453A}
+    .dash-spin-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:14px}
+    .dash-spin{width:34px;height:34px;border:3px solid #2A2A2C;border-top-color:#2E6B3E;border-radius:50%;animation:spin .8s linear infinite}
+    .dash-err{text-align:center;padding:32px;color:#8E8E93;font-size:14px;line-height:1.6}
+
     </style>
 </head>
 <body>
@@ -828,6 +889,20 @@
     <!-- ══════════════════════════════════════════════════════
          BOTTOM NAVIGATION
     ══════════════════════════════════════════════════════ -->
+
+    <!-- SCREEN: DASHBOARD -->
+    <div class="screen" id="screen-dashboard">
+        <div class="header">
+            <span class="header-title">Dashboard</span>
+            <button onclick="loadDashboard()" style="background:none;border:none;color:#8E8E93;cursor:pointer;padding:4px;line-height:0">
+                <svg width="18" height="18" stroke="currentColor" fill="none" stroke-width="1.75" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            </button>
+        </div>
+        <div class="dash-container" id="dashContainer">
+            <div class="dash-spin-wrap"><div class="dash-spin"></div><span style="color:#636366;font-size:13px">Loading...</span></div>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <button class="nav-tab active" id="nav-log" onclick="switchScreen('log')">
             <svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -840,6 +915,10 @@
         <button class="nav-tab" id="nav-import" onclick="switchScreen('import')">
             <svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>Import</span>
+        </button>
+        <button class="nav-tab" id="nav-dashboard" onclick="switchScreen('dashboard')">
+            <svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            <span>Dashboard</span>
         </button>
         <button class="nav-tab" id="nav-sync" onclick="openSyncSheet()" style="position:relative">
             <svg width="22" height="22" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
@@ -927,7 +1006,7 @@
     // ── VERSION CHECK ──────────────────────────────────────────
     // Bump MIN_CODE_VERSION whenever Code.gs changes are required.
     // Users running older Code.gs will see the update banner on next load.
-    var MIN_CODE_VERSION = "2.1.0";
+    var MIN_CODE_VERSION = "2.2.0";
 
     var SCRIPT_URL_KEY = "financials_script_url";
     var API_TOKEN_KEY  = "financials_api_token";
@@ -951,7 +1030,7 @@
         var fns = [
             "getConfig","saveTransaction","saveAssetTrade","saveAssetUpdate",
             "importHistoricalData","importAssetTrades","getLiveAssetPrice",
-            "getHeldShares","getCategoryHistory"
+            "getHeldShares","getCategoryHistory","getDashboardData"
         ];
         // Large-payload actions that must use POST (import data can be 100s of rows)
         var POST_ACTIONS = ["importHistoricalData", "importAssetTrades"];
@@ -1151,7 +1230,7 @@
     // NAVIGATION
     // ══════════════════════════════════════════════════════════
     function switchScreen(name) {
-        ["log","assets","import"].forEach(function(s) {
+        ["log","assets","import","dashboard"].forEach(function(s) {
             document.getElementById("screen-" + s).classList.toggle("active", s === name);
             document.getElementById("nav-" + s).classList.toggle("active", s === name);
         });
@@ -3086,6 +3165,158 @@ function clearSynced() {
         localStorage.removeItem(API_TOKEN_KEY);
         showOnboarding();
     }
+
+
+    // ===================================================
+    // DASHBOARD
+    // ===================================================
+    var dashData   = null;
+    var dashLoaded = false;
+
+    function loadDashboard() {
+        dashLoaded = false;
+        document.getElementById("dashContainer").innerHTML =
+            '<div class="dash-spin-wrap"><div class="dash-spin"></div><span style="color:#636366;font-size:13px">Loading...</span></div>';
+        gsr()
+            .withSuccessHandler(function(d) {
+                if (d && !d.error) { dashData = d; dashLoaded = true; renderDashboard(d); }
+                else document.getElementById("dashContainer").innerHTML =
+                    '<div class="dash-err">&#x26A0;&#xFE0F; ' + (d && d.error ? d.error : "Could not load data") + '</div>';
+            })
+            .withFailureHandler(function() {
+                document.getElementById("dashContainer").innerHTML =
+                    '<div class="dash-err">&#x26A0;&#xFE0F; Could not reach your Sheet.<br>Check connection and try again.</div>';
+            })
+            .getDashboardData();
+    }
+
+    function dfmt(n) {
+        if (!n && n !== 0) return "$0";
+        var s = Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+        return (n < 0 ? "-" : "") + "$" + s;
+    }
+    function dpct(n) { return ((n||0)*100).toFixed(1) + "%"; }
+    var CAT_COLORS = ["#2E6B3E","#4CD964","#30A46C","#1D9BF0","#FF9F0A","#BF5AF2","#64D2FF","#FF6B6B","#AC8E68","#FF453A"];
+    var CAT_EMOJI  = {
+        "Food & Dining":"&#x1F354;","Transportation":"&#x1F687;","Healthcare":"&#x1F3E5;",
+        "Entertainment":"&#x1F3AE;","Shopping":"&#x1F6CD;","Personal Care":"&#x1F6C1;",
+        "Travel":"&#x2708;","Utilities":"&#x1F50C;","Other":"&#x1F4CB;",
+        "Unexpected Expense":"&#x26A0;","Unexpected Income":"&#x2B50;"
+    };
+
+    function renderDashboard(d) {
+        var kpi = d.kpis || {};
+        var rem = kpi.remaining || 0;
+        var rc  = rem >= 0 ? "pos" : "neg";
+
+        // KPI PULSE
+        var kpiH = '<div class="dash-card">' +
+            '<div class="dash-card-title">Monthly Pulse &mdash; ' + (d.month||"") + '</div>' +
+            '<div class="kpi-grid">' +
+            '<div class="kpi-item"><div class="kpi-label">Take-Home</div><div class="kpi-val pos">' + dfmt(kpi.takeHome) + '</div></div>' +
+            '<div class="kpi-item"><div class="kpi-label">Fixed</div><div class="kpi-val neg">' + dfmt(kpi.fixedExp) + '</div></div>' +
+            '<div class="kpi-item"><div class="kpi-label">Variable Spent</div><div class="kpi-val neg">' + dfmt(kpi.varSpend) + '</div></div>' +
+            (kpi.unexpInc ? '<div class="kpi-item"><div class="kpi-label">Unexpected Income</div><div class="kpi-val pos">' + dfmt(kpi.unexpInc) + '</div></div>' : '') +
+            '<div class="kpi-item ' + (kpi.unexpInc ? '' : 'fw') + '"><div class="kpi-label">Remaining</div><div class="kpi-val ' + rc + '">' + dfmt(rem) + '</div></div>' +
+            '</div></div>';
+
+        // WEEKLY
+        var weeks = d.weeks || [];
+        var wIdx  = d.weekIndex || 0;
+        var wRows = weeks.map(function(w,i) {
+            var pct = w.allowance > 0 ? Math.min((w.actual/w.allowance)*100,100) : 0;
+            var bc  = w.actual > w.allowance ? "over" : (pct > 80 ? "warn" : "ok");
+            var rc2 = w.remaining >= 0 ? "#4CD964" : "#FF453A";
+            var isc = i === wIdx;
+            return '<div class="week-row' + (isc ? " curr" : "") + '">' +
+                '<div class="wk-lbl">' + (w.label||"") + (isc ? ' <span style="font-size:9px;color:#2E6B3E;font-weight:700;vertical-align:middle">NOW</span>' : '') + '</div>' +
+                '<div class="wk-bar-wrap"><div class="wk-bar ' + bc + '" style="width:' + pct.toFixed(0) + '%"></div></div>' +
+                '<div class="wk-amt">' + dfmt(w.actual) + '</div>' +
+                '<div class="wk-rem" style="color:' + rc2 + '">' + dfmt(w.remaining) + '</div>' +
+            '</div>';
+        }).join("");
+        var weekH = '<div class="dash-card"><div class="dash-card-title">Weekly vs Allowance (' + dfmt(weeks[0] && weeks[0].allowance || 0) + '/wk)</div>' + wRows + '</div>';
+
+        // CATEGORIES
+        var cats = (d.categories||[]).filter(function(c){return c.amount<0;}).slice(0,8);
+        var maxA = cats.length ? Math.abs(cats[0].amount) : 1;
+        var cRows = cats.map(function(c,i) {
+            var bp = (Math.abs(c.amount)/maxA*100).toFixed(0);
+            return '<div class="cat-row">' +
+                '<div class="cat-dot" style="background:' + CAT_COLORS[i%CAT_COLORS.length] + '"></div>' +
+                '<div class="cat-name">' + c.name + '</div>' +
+                '<div class="cat-bw"><div class="cat-b" style="width:' + bp + '%;background:' + CAT_COLORS[i%CAT_COLORS.length] + '"></div></div>' +
+                '<div class="cat-amt">' + dfmt(c.amount) + '</div>' +
+            '</div>';
+        }).join("");
+        var catH = '<div class="dash-card"><div class="dash-card-title">Spending by Category</div>' + cRows + '</div>';
+
+        // RECENT TRANSACTIONS
+        var recent = d.recent || [];
+        var tRows = recent.map(function(t) {
+            var isInc = t.amount > 0;
+            var emoji = CAT_EMOJI[t.category] || '&#x1F4B0;';
+            return '<div class="txn-row">' +
+                '<div class="txn-icon">' + emoji + '</div>' +
+                '<div class="txn-info">' +
+                    '<div class="txn-desc">' + (t.desc || t.category) + '</div>' +
+                    '<div class="txn-meta">' + t.date + ' &middot; ' + t.category + '</div>' +
+                '</div>' +
+                '<div class="txn-amt ' + (isInc?"inc":"exp") + '">' + (isInc?"+":"") + dfmt(t.amount) + '</div>' +
+            '</div>';
+        }).join("");
+        var txnH = '<div class="dash-card"><div class="dash-card-title">Recent Transactions</div>' + tRows + '</div>';
+
+        // SAVINGS GOALS
+        var goals = d.goals || [];
+        var gRows = goals.map(function(g) {
+            var pct  = Math.min((g.pct||0)*100,100);
+            var done = pct >= 100;
+            return '<div class="goal-row">' +
+                '<div class="goal-hdr"><div class="goal-name">' + g.name + (done?" &#x2705;":"") + '</div>' +
+                '<div class="goal-pct" style="color:' + (done?"#4CD964":"#2E6B3E") + '">' + pct.toFixed(0) + '%</div></div>' +
+                '<div class="goal-bw"><div class="goal-b" style="width:' + pct + '%"></div></div>' +
+                '<div class="goal-ft"><div class="goal-cur">' + dfmt(g.current) + ' of ' + dfmt(g.target) + '</div>' +
+                '<div class="goal-tgt">' + dfmt(g.monthly) + '/mo</div></div>' +
+            '</div>';
+        }).join("");
+        var goalH = '<div class="dash-card"><div class="dash-card-title">Savings Goals</div>' + gRows + '</div>';
+
+        // PORTFOLIO
+        var port  = d.portfolio || {};
+        var gain  = port.gain || 0;
+        var gc    = gain >= 0 ? "#4CD964" : "#FF453A";
+        var gs    = gain >= 0 ? "+" : "";
+        var hcards = (port.holdings||[]).slice(0,4).map(function(h) {
+            var hp  = (h.growthPct||0)*100;
+            var hup = hp >= 0;
+            return '<div class="hld-card">' +
+                '<div class="hld-ticker">' + h.ticker + '</div>' +
+                '<div class="hld-acct">' + h.account + '</div>' +
+                '<div class="hld-val">' + dfmt(h.value) + '</div>' +
+                '<div class="hld-pct ' + (hup?"up":"dn") + '">' + (hup?"&#x25B2;":"&#x25BC;") + ' ' + Math.abs(hp).toFixed(1) + '%</div>' +
+            '</div>';
+        }).join("");
+        var portH = '<div class="dash-card"><div class="dash-card-title">Portfolio</div>' +
+            '<div class="port-hero"><div class="port-val">' + dfmt(port.value) + '</div>' +
+            '<div class="port-gain" style="color:' + gc + '">' + gs + dfmt(gain) + ' (' + gs + dpct(port.pct) + ')</div></div>' +
+            (hcards ? '<div class="port-grid">' + hcards + '</div>' : '') +
+        '</div>';
+
+        document.getElementById("dashContainer").innerHTML =
+            '<div class="dash-month">' + (d.month||"") + '</div>' +
+            kpiH + weekH + catH + txnH + goalH + portH;
+    }
+
+    // Auto-load on first switch to dashboard
+    (function() {
+        var orig = switchScreen;
+        switchScreen = function(name) {
+            orig(name);
+            if (name === "dashboard" && !dashLoaded) loadDashboard();
+        };
+    })();
+
 
     window.onload = function() {
         // Init Lucide icons
