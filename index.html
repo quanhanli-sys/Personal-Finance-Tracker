@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2D5C3F">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Financials</title>
     <style>
@@ -946,23 +948,43 @@
             "importHistoricalData","importAssetTrades","getLiveAssetPrice",
             "getHeldShares","getCategoryHistory"
         ];
+        // Large-payload actions that must use POST (import data can be 100s of rows)
+        var POST_ACTIONS = ["importHistoricalData", "importAssetTrades"];
+
         fns.forEach(function(name) {
             proxy[name] = function(arg) {
                 var base = getScriptUrl();
                 if (!base) { _onFail(new Error("No Script URL set")); return; }
-                // Use GET with URL params — avoids CORS preflight that blocks POST
-                var params = "?action=" + encodeURIComponent(name);
-                params += "&token=" + encodeURIComponent(getApiToken());
-                if (arg !== undefined) {
-                    params += "&data=" + encodeURIComponent(JSON.stringify(arg));
+
+                var usePost = POST_ACTIONS.indexOf(name) > -1;
+
+                if (usePost) {
+                    // POST for large payloads — Apps Script doPost handles these
+                    fetch(base, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain" },
+                        body: JSON.stringify({ action: name, token: getApiToken(), data: arg }),
+                        redirect: "follow"
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(result) {
+                        _onSuccess(result.result !== undefined ? result.result : result);
+                    })
+                    .catch(function(e) { _onFail(e); });
+                } else {
+                    // GET for all other calls — avoids CORS preflight
+                    var params = "?action=" + encodeURIComponent(name);
+                    params += "&token=" + encodeURIComponent(getApiToken());
+                    if (arg !== undefined) {
+                        params += "&data=" + encodeURIComponent(JSON.stringify(arg));
+                    }
+                    fetch(base + params, { method: "GET", redirect: "follow" })
+                    .then(function(r) { return r.json(); })
+                    .then(function(result) {
+                        _onSuccess(result.result !== undefined ? result.result : result);
+                    })
+                    .catch(function(e) { _onFail(e); });
                 }
-                var url = base + params;
-                fetch(url, { method: "GET", redirect: "follow" })
-                .then(function(r) { return r.json(); })
-                .then(function(result) {
-                    _onSuccess(result.result !== undefined ? result.result : result);
-                })
-                .catch(function(e) { _onFail(e); });
             };
         });
         return proxy;
@@ -1316,7 +1338,7 @@
                     document.getElementById("manualPriceRow").className  = "field-row";
                     updateCalcPreview();
                 })
-                .getLiveAssetPrice(ticker, account);
+                .getLiveAssetPrice({ticker: ticker, account: account});
         } catch(e) { priceLoading = false; }
     }
 
@@ -3023,5 +3045,59 @@ function clearSynced() {
     </script>
 
 </div>
+
+    <script>
+    // ── SERVICE WORKER REGISTRATION ───────────────────────────
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function() {
+            navigator.serviceWorker.register("./service-worker.js")
+            .then(function(reg) {
+                // Check for updates on every load
+                reg.addEventListener("updatefound", function() {
+                    var newWorker = reg.installing;
+                    newWorker.addEventListener("statechange", function() {
+                        if (newWorker.state === "installed" &&
+                            navigator.serviceWorker.controller) {
+                            // New version available — show update banner
+                            showUpdateBanner();
+                        }
+                    });
+                });
+            })
+            .catch(function(err) {
+                console.log("SW registration failed:", err);
+            });
+
+            // Handle SW-controlled refresh after update
+            var refreshing = false;
+            navigator.serviceWorker.addEventListener("controllerchange", function() {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        });
+    }
+
+    function showUpdateBanner() {
+        var banner = document.createElement("div");
+        banner.id = "updateBanner";
+        banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;" +
+            "background:#2D5C3F;color:#fff;font-family:Arial,sans-serif;font-size:14px;" +
+            "padding:12px 16px;display:flex;justify-content:space-between;align-items:center;";
+        banner.innerHTML =
+            "<span>✨ App updated — tap to reload</span>" +
+            "<button onclick='applyUpdate()' style='background:#fff;color:#2D5C3F;" +
+            "border:none;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer'>Reload</button>";
+        document.body.appendChild(banner);
+    }
+
+    function applyUpdate() {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: "SKIP_WAITING" });
+        }
+        window.location.reload();
+    }
+    </script>
 </body>
 </html>
