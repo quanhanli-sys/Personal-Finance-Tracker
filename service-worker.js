@@ -1,9 +1,13 @@
-// ============================================================
-//  Financials — Service Worker  v2.1.0
-//  Bump CACHE_NAME when index.html changes to force update.
-// ============================================================
+// ╔══════════════════════════════════════════════════════════╗
+// ║  VERSION CONFIG — UPDATE THIS WHEN RELEASING A CHANGE   ║
+// ╠══════════════════════════════════════════════════════════╣
+// ║  CACHE_NAME  →  bump whenever index.html changes         ║
+// ║  Forces all users' browsers to pull the new version      ║
+// ║  Match this to MIN_CODE_VERSION in index.html            ║
+// ╚══════════════════════════════════════════════════════════╝
+var CACHE_NAME  = "financials-v2.2.0";
 
-var CACHE_NAME  = "financials-v2.1.0";
+// ── Everything below rarely needs changing ────────────────────
 var REPO_PATH   = "/Personal-Finance-Tracker";
 var APP_SHELL   = [
   REPO_PATH + "/",
