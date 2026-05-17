@@ -3305,7 +3305,8 @@ function clearSynced() {
         var monthlyOver  = rem <= 0;
         var arcRemaining = monthlyOver ? Math.min(curW.remaining || 0, 0) : (curW.remaining || 0);
         // Visual fill: actual % used, capped at 100% for the circle
-        var arcPct    = arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0;
+        // When monthly budget exceeded, fill arc 100% to signal full spend
+        var arcPct    = monthlyOver ? 1 : (arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0);
         var arcOver   = monthlyOver || arcActual > arcAllow;
         // Color: green → amber at 80% → red only when genuinely over
         var arcStroke = arcOver ? "#FF6B6B" : (arcPct > 0.8 ? "#FF9F0A" : "#4CD964");
@@ -3329,11 +3330,11 @@ function clearSynced() {
             ' stroke-dasharray="' + dashArr + '" stroke-linecap="round"' +
             ' style="transition:stroke-dasharray 0.6s ease;"/>' +
             '</svg>' +
-            '<div style="position:absolute;top:0;left:0;width:100%;height:192px;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+            '<div style="position:absolute;top:0;left:0;width:100%;height:192px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;box-sizing:border-box;">' +
             '<div style="font-size:22px;font-weight:700;color:' + wkRemColor + ';line-height:1.1;">' + dfmt(arcRemaining) + '</div>' +
             '<div style="font-size:10px;color:#636366;margin-top:3px;">week remaining</div>' +
             (monthlyOver
-              ? '<div style="font-size:11px;font-weight:600;color:#FF6B6B;margin-top:4px;">monthly budget exceeded</div>'
+              ? '<div style="font-size:10px;font-weight:600;color:#FF6B6B;margin-top:4px;text-align:center;line-height:1.3;">monthly budget<br>exceeded</div>'
               : '<div style="font-size:13px;font-weight:600;color:#8E8E93;margin-top:4px;">' + (arcAllow > 0 ? (arcActual/arcAllow*100).toFixed(0) : 0) + '% used</div>') +
             '<div style="font-size:10px;color:#636366;margin-top:3px;">' + dfmt(arcAllow) + '/wk</div>' +
             '</div>' +
