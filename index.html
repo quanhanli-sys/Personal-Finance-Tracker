@@ -314,6 +314,7 @@
     .wk-bar.ok{background:#2E6B3E}.wk-bar.warn{background:#FF9F0A}.wk-bar.over{background:#FF453A}
     .wk-amt{font-size:12px;font-weight:700;color:#fff;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
     .wk-rem{font-size:11px;min-width:50px;text-align:right;font-variant-numeric:tabular-nums}
+    .wk-mon-rem{font-size:10px;color:#636366;padding:3px 8px 2px;width:100%}
     .cat-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #1A1A1C;gap:8px}
     .cat-row:last-child{border-bottom:none}
     .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -3260,13 +3261,15 @@ function clearSynced() {
             var bc  = w.actual > w.allowance ? "over" : (pct > 80 ? "warn" : "ok");
             var rc2 = w.remaining >= 0 ? "#4CD964" : "#FF453A";
             var isc = i === wIdx;
-            var monRemLabel = isc ? '<div class="wk-mon-rem" style="font-size:10px;color:#636366;margin-top:2px;">Monthly remaining: <span style="color:' + (rem>=0?"#4CD964":"#FF453A") + '">' + dfmt(rem) + '</span></div>' : "";
-            return '<div class="week-row' + (isc ? " curr" : "") + '">' +
+            var monRemLabel = isc ? '<div class="wk-mon-rem">Monthly remaining: <span style="color:' + (rem>=0?"#4CD964":"#FF453A") + '">' + dfmt(rem) + '</span></div>' : "";
+            var rowInner = '<div style="display:flex;align-items:center;gap:8px;width:100%">' +
                 '<div class="wk-lbl">' + (w.label||"") + (isc ? ' <span style="font-size:9px;color:#2E6B3E;font-weight:700;vertical-align:middle">NOW</span>' : '') + '</div>' +
                 '<div class="wk-bar-wrap"><div class="wk-bar ' + bc + '" style="width:' + pct.toFixed(0) + '%"></div></div>' +
                 '<div class="wk-amt">' + dfmt(w.actual) + '</div>' +
                 '<div class="wk-rem" style="color:' + rc2 + '">' + dfmt(w.remaining) + '</div>' +
-                monRemLabel +
+            '</div>';
+            return '<div class="week-row' + (isc ? " curr" : "") + '" style="' + (isc ? "flex-direction:column;align-items:stretch;" : "") + '">' +
+                rowInner + monRemLabel +
             '</div>';
         }).join("");
         var weekH = '<div class="dash-card"><div class="dash-card-title">Weekly vs Allowance (' + dfmt(weeks[0] && weeks[0].allowance || 0) + '/wk)</div>' + wRows + '</div>';
