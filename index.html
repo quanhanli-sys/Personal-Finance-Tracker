@@ -314,7 +314,6 @@
     .wk-bar.ok{background:#2E6B3E}.wk-bar.warn{background:#FF9F0A}.wk-bar.over{background:#FF453A}
     .wk-amt{font-size:12px;font-weight:700;color:#fff;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
     .wk-rem{font-size:11px;min-width:50px;text-align:right;font-variant-numeric:tabular-nums}
-    .wk-mon-rem{font-size:10px;color:#636366;padding:3px 8px 2px;width:100%}
     .cat-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #1A1A1C;gap:8px}
     .cat-row:last-child{border-bottom:none}
     .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -3256,23 +3255,74 @@ function clearSynced() {
         // WEEKLY
         var weeks = d.weeks || [];
         var wIdx  = d.weekIndex || 0;
-        var wRows = weeks.map(function(w,i) {
-            var pct = w.allowance > 0 ? Math.min((w.actual/w.allowance)*100,100) : 0;
-            var bc  = w.actual > w.allowance ? "over" : (pct > 80 ? "warn" : "ok");
-            var rc2 = w.remaining >= 0 ? "#4CD964" : "#FF453A";
-            var isc = i === wIdx;
-            var monRemLabel = isc ? '<div class="wk-mon-rem">Monthly remaining: <span style="color:' + (rem>=0?"#4CD964":"#FF453A") + '">' + dfmt(rem) + '</span></div>' : "";
-            var rowInner = '<div style="display:flex;align-items:center;gap:8px;width:100%">' +
-                '<div class="wk-lbl">' + (w.label||"") + (isc ? ' <span style="font-size:9px;color:#2E6B3E;font-weight:700;vertical-align:middle">NOW</span>' : '') + '</div>' +
-                '<div class="wk-bar-wrap"><div class="wk-bar ' + bc + '" style="width:' + pct.toFixed(0) + '%"></div></div>' +
-                '<div class="wk-amt">' + dfmt(w.actual) + '</div>' +
-                '<div class="wk-rem" style="color:' + rc2 + '">' + dfmt(w.remaining) + '</div>' +
-            '</div>';
-            return '<div class="week-row' + (isc ? " curr" : "") + '" style="' + (isc ? "flex-direction:column;align-items:stretch;" : "") + '">' +
-                rowInner + monRemLabel +
+        var curW  = weeks[wIdx] || {};
+
+        // ── SVG arc for current week ──────────────────────────────────────────
+        var arcAllow   = curW.allowance || 0;
+        var arcActual  = Math.abs(curW.actual || 0);
+        var arcPct     = arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0;
+        var arcOver    = arcActual > arcAllow;
+        var arcColor   = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#2E6B3E");
+        var arcStroke  = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#4CD964");
+
+        // Arc geometry: cx=88, cy=88, r=72, strokeWidth=12
+        // Full circle circumference = 2*PI*72 = ~452.4
+        // We use a 240-degree arc (from 150deg to 390deg = 150deg to 30deg next)
+        var R = 72; var CX = 88; var CY = 88; var SW = 12;
+        var arcLen   = 2 * Math.PI * R * (240/360); // 240deg arc
+        var fillLen  = arcLen * arcPct;
+        var gapLen   = arcLen - fillLen;
+        // SVG arc trick: dasharray = fillLen then gap; rotate so arc starts at -210deg (bottom-left)
+        var dashArr  = fillLen.toFixed(2) + " " + (arcLen - fillLen + 1).toFixed(2);
+        var dashArrBg = arcLen.toFixed(2) + " " + (2*Math.PI*R - arcLen + 1).toFixed(2);
+        // Path: large arc from 150deg to 30deg (clockwise)
+        function polar(cx, cy, r, deg) {
+            var rad = (deg - 90) * Math.PI / 180;
+            return { x: (cx + r * Math.cos(rad)).toFixed(2), y: (cy + r * Math.sin(rad)).toFixed(2) };
+        }
+        var s = polar(CX, CY, R, 150); // start
+        var e = polar(CX, CY, R, 30);  // end (150 + 240 = 390 = 30)
+        var arcPath = "M " + s.x + " " + s.y + " A " + R + " " + R + " 0 1 1 " + e.x + " " + e.y;
+
+        var wkRemColor = (curW.remaining || 0) >= 0 ? "#4CD964" : "#FF453A";
+        var arcSvg =
+            '<svg width="176" height="176" viewBox="0 0 176 176" style="display:block;margin:0 auto 4px;">' +
+            // Background track
+            '<path d="' + arcPath + '" fill="none" stroke="#2A2A2C" stroke-width="' + SW + '" stroke-linecap="round"/>' +
+            // Progress arc
+            '<path d="' + arcPath + '" fill="none" stroke="' + arcStroke + '" stroke-width="' + SW + '" stroke-linecap="round"' +
+            ' stroke-dasharray="' + dashArr + '" stroke-dashoffset="0"' +
+            ' style="transition:stroke-dasharray 0.6s ease;"/>' +
+            // Center: week remaining (large)
+            '<text x="88" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="' + wkRemColor + '" font-family="Arial,sans-serif">' + dfmt(curW.remaining || 0) + '</text>' +
+            // Center: label
+            '<text x="88" y="98" text-anchor="middle" font-size="10" fill="#636366" font-family="Arial,sans-serif">week remaining</text>' +
+            // Center: pct used
+            '<text x="88" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#8E8E93" font-family="Arial,sans-serif">' + (arcPct*100).toFixed(0) + '% used</text>' +
+            // Bottom label: week dates
+            '<text x="88" y="154" text-anchor="middle" font-size="10" fill="#636366" font-family="Arial,sans-serif">' + (curW.label||"") + '</text>' +
+            '</svg>';
+
+        // ── Compact rows for all other weeks ─────────────────────────────────
+        var otherRows = weeks.map(function(w, i) {
+            if (i === wIdx) return "";
+            var pct2 = w.allowance > 0 ? Math.min((Math.abs(w.actual)/w.allowance)*100, 100) : 0;
+            var bc2  = Math.abs(w.actual) > w.allowance ? "over" : (pct2 > 80 ? "warn" : "ok");
+            var rc2  = w.remaining >= 0 ? "#4CD964" : "#FF453A";
+            var past = i < wIdx;
+            return '<div class="week-row" style="opacity:' + (past ? "0.6" : "1") + '">' +
+                '<div class="wk-lbl" style="font-size:10px">' + (w.label||"") + '</div>' +
+                '<div class="wk-bar-wrap"><div class="wk-bar ' + bc2 + '" style="width:' + pct2.toFixed(0) + '%"></div></div>' +
+                '<div class="wk-amt" style="font-size:11px">' + dfmt(w.actual) + '</div>' +
+                '<div class="wk-rem" style="color:' + rc2 + ';font-size:11px">' + dfmt(w.remaining) + '</div>' +
             '</div>';
         }).join("");
-        var weekH = '<div class="dash-card"><div class="dash-card-title">Weekly vs Allowance (' + dfmt(weeks[0] && weeks[0].allowance || 0) + '/wk)</div>' + wRows + '</div>';
+
+        var weekH = '<div class="dash-card">' +
+            '<div class="dash-card-title">Weekly vs Allowance (' + dfmt(arcAllow) + '/wk)</div>' +
+            arcSvg +
+            (otherRows ? '<div style="border-top:1px solid #1A1A1C;margin-top:4px;padding-top:8px;">' + otherRows + '</div>' : '') +
+            '</div>';
 
         // CATEGORIES
         var cats = (d.categories||[]).filter(function(c){return c.amount<0;}).slice(0,8);
