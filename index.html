@@ -1184,6 +1184,8 @@
                 }
                 if (c.accounts)     cfg.accounts     = c.accounts;
                 if (c.knownTickers) cfg.knownTickers = c.knownTickers;
+                if (c.cards)        cfg.cards        = c.cards;
+                console.log("getConfig cards:", JSON.stringify(cfg.cards));
                 // Only reset category display if on Expense AND no custom category is being typed
                 if (state.type === "Expense" && !state.customCategory) {
                                 // Init card from localStorage or first card
