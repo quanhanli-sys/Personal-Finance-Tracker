@@ -1039,10 +1039,13 @@
         var fns = [
             "getConfig","saveTransaction","saveAssetTrade","saveAssetUpdate",
             "importHistoricalData","importAssetTrades","getLiveAssetPrice",
-            "getHeldShares","getCategoryHistory","getDashboardData"
+            "getHeldShares","getCategoryHistory","getDashboardData",
+            "getRolloverConfirmationData","confirmRollover",
+            "getCardLedgerData","logCardPayment"
         ];
         // Large-payload actions that must use POST (import data can be 100s of rows)
-        var POST_ACTIONS = ["importHistoricalData", "importAssetTrades"];
+        var POST_ACTIONS = ["importHistoricalData", "importAssetTrades",
+                            "confirmRollover", "logCardPayment"];
 
         fns.forEach(function(name) {
             proxy[name] = function(arg) {
@@ -3226,7 +3229,7 @@ function clearSynced() {
                 '<div style="font-size:22px;text-align:center;margin-bottom:4px;">&#x1F389;</div>' +
                 '<div style="font-size:15px;font-weight:700;color:#4CD964;text-align:center;">Great month!</div>' +
                 '<div style="font-size:12px;color:#A8D5B0;text-align:center;margin-top:4px;">Your surplus exceeded your savings target.</div>' +
-                '<div onclick="localStorage.setItem('' + celebKey + '','1');this.parentElement.remove();" ' +
+                '<div onclick="dismissCelebration(this)" data-key="' + celebKey + '" ' +
                 'style="font-size:11px;color:#636366;text-align:center;margin-top:8px;cursor:pointer;">Dismiss</div>' +
             '</div>';
         }
@@ -3372,23 +3375,25 @@ function clearSynced() {
         var currentYYYYMM = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
         var confirmed = localStorage.getItem("lastConfirmedMonth");
         if (confirmed === currentYYYYMM) return; // already confirmed this month
-        // Fetch rollover data
-        gsr("getRolloverConfirmationData", null, function(res) {
-            if (!res || res.error) return;
-            if (!res.rolloverOn) {
-                // Rollover disabled — auto-confirm with 0
-                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
-                return;
-            }
-            var endBal = res.endBalance || 0;
-            // Only show modal if there's a negative balance to carry forward
-            if (endBal >= 0) {
-                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
-                // Check celebration
-                return;
-            }
-            showRolloverModal(res, currentYYYYMM);
-        });
+        // Fetch rollover data using chain pattern
+        gsr()
+            .withSuccessHandler(function(res) {
+                if (!res || res.error) return;
+                if (!res.rolloverOn) {
+                    localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                    return;
+                }
+                var endBal = res.endBalance || 0;
+                if (endBal >= 0) {
+                    localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                    return;
+                }
+                showRolloverModal(res, currentYYYYMM);
+            })
+            .withFailureHandler(function() {
+                // Silent fail — don't block app if rollover check fails
+            })
+            .getRolloverConfirmationData();
     }
 
     function showRolloverModal(res, currentYYYYMM) {
@@ -3428,6 +3433,13 @@ function clearSynced() {
         document.body.appendChild(modal);
     }
 
+    function dismissCelebration(el) {
+        var key = el.getAttribute("data-key");
+        if (key) localStorage.setItem(key, "1");
+        var card = el.parentElement;
+        if (card) card.remove();
+    }
+
     function toggleRoCards() {
         var el  = document.getElementById("ro-cards");
         var btn = document.getElementById("ro-card-toggle");
@@ -3441,25 +3453,29 @@ function clearSynced() {
     }
 
     function confirmRolloverModal(currentYYYYMM) {
-        var amount   = parseFloat(document.getElementById("ro-amount").value) || 0;
+        var amount    = parseFloat(document.getElementById("ro-amount").value) || 0;
         var cardSplit = [];
-        var cards    = document.querySelectorAll(".ro-card-input");
+        var cards     = document.querySelectorAll(".ro-card-input");
         cards.forEach(function(inp) {
             var name = inp.id.replace("ro-card-","").replace(/-/g," ");
             cardSplit.push({ name: name, amount: parseFloat(inp.value) || 0 });
         });
-        gsr("confirmRollover", { carryIn: amount, cardSplit: cardSplit }, function(res) {
-            if (res && res.success) {
-                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
-                var modal = document.getElementById("rolloverModal");
-                if (modal) modal.remove();
-                // Reload dashboard if open
-                if (typeof dashLoaded !== "undefined") {
-                    dashLoaded = false;
-                    if (state.screen === "dashboard") loadDashboard();
+        gsr()
+            .withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                    var modal = document.getElementById("rolloverModal");
+                    if (modal) modal.remove();
+                    if (typeof dashLoaded !== "undefined") {
+                        dashLoaded = false;
+                        if (state.screen === "dashboard") loadDashboard();
+                    }
                 }
-            }
-        }, "POST");
+            })
+            .withFailureHandler(function(e) {
+                alert("Could not save rollover. Please try again.");
+            })
+            .confirmRollover({ carryIn: amount, cardSplit: cardSplit });
     }
     </script>
 
