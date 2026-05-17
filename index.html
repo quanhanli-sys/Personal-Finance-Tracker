@@ -3418,7 +3418,7 @@ function clearSynced() {
             '<div style="background:#1C1C1E;border-radius:16px;padding:24px;max-width:360px;width:100%;border:1px solid #2A2A2C;">' +
             '<div style="font-size:13px;color:#8E8E93;margin-bottom:4px;">Month end — ' + prevLbl + '</div>' +
             '<div style="font-size:22px;font-weight:700;color:#FF453A;margin-bottom:8px;">' + dfmt(endBal) + '</div>' +
-            '<div style="font-size:14px;color:#EBEBF5;margin-bottom:16px;">This balance will be spread evenly across this month's weekly allowance. Edit if needed.</div>' +
+            '<div style="font-size:14px;color:#EBEBF5;margin-bottom:16px;">This balance will be spread evenly across this month\'s weekly allowance. Edit if needed.</div>' +
             '<label style="font-size:12px;color:#8E8E93;">Carry-in amount</label>' +
             '<input type="number" id="ro-amount" value="' + endBal.toFixed(2) + '" step="0.01" ' +
             'style="width:100%;padding:10px;background:#2C2C2E;border:1px solid #3A3A3C;border-radius:8px;color:#FFF;font-size:16px;margin:6px 0 16px;">' +
@@ -3427,7 +3427,7 @@ function clearSynced() {
                 '<div id="ro-cards" style="display:none;margin-bottom:16px;">' +
                 '<div style="font-size:12px;color:#8E8E93;margin-bottom:8px;">Allocate carry-in per card (optional)</div>' +
                 cardRows + '</div>' : '') +
-            '<button onclick="confirmRolloverModal('' + currentYYYYMM + '')" ' +
+            '<button onclick="confirmRolloverModal(this)" data-month="' + currentYYYYMM + '" ' +
             'style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:10px;color:#FFF;font-size:16px;font-weight:700;cursor:pointer;">Confirm</button>' +
             '</div>';
         document.body.appendChild(modal);
@@ -3452,7 +3452,8 @@ function clearSynced() {
         }
     }
 
-    function confirmRolloverModal(currentYYYYMM) {
+    function confirmRolloverModal(btn) {
+        var currentYYYYMM = btn.getAttribute("data-month") || "";
         var amount    = parseFloat(document.getElementById("ro-amount").value) || 0;
         var cardSplit = [];
         var cards     = document.querySelectorAll(".ro-card-input");
