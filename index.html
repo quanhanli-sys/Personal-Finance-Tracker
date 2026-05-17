@@ -988,7 +988,7 @@
     // ║  Bump when Code.gs adds new functions or breaking changes ║
     // ║  Also bump CACHE_NAME in service-worker.js to match      ║
     // ╚══════════════════════════════════════════════════════════╝
-    var MIN_CODE_VERSION = "2.2.0";
+    var MIN_CODE_VERSION = "2.3.0";
 
     // ══════════════════════════════════════════════════════════
     // CONFIG & STATE
@@ -1015,7 +1015,7 @@
     // ── VERSION CHECK ──────────────────────────────────────────
     // Bump MIN_CODE_VERSION whenever Code.gs changes are required.
     // Users running older Code.gs will see the update banner on next load.
-    var MIN_CODE_VERSION = "2.2.0";
+    var MIN_CODE_VERSION = "2.3.0";
 
     var SCRIPT_URL_KEY = "financials_script_url";
     var API_TOKEN_KEY  = "financials_api_token";
@@ -3218,9 +3218,25 @@ function clearSynced() {
         var rem = kpi.remaining || 0;
         var rc  = rem >= 0 ? "pos" : "neg";
 
+        // ── CELEBRATION BANNER ────────────────────────────────────────────────
+        var celebKey = "celebrateDismissed-" + (d.month||"").replace(/\s/g,"-");
+        var celebH = "";
+        if (d.celebrateSurplus && !localStorage.getItem(celebKey)) {
+            celebH = '<div class="dash-card" style="background:linear-gradient(135deg,#1D4A2A,#2E6B3E);border:1px solid #4CD964;margin-bottom:12px;">' +
+                '<div style="font-size:22px;text-align:center;margin-bottom:4px;">&#x1F389;</div>' +
+                '<div style="font-size:15px;font-weight:700;color:#4CD964;text-align:center;">Great month!</div>' +
+                '<div style="font-size:12px;color:#A8D5B0;text-align:center;margin-top:4px;">Your surplus exceeded your savings target.</div>' +
+                '<div onclick="localStorage.setItem('' + celebKey + '','1');this.parentElement.remove();" ' +
+                'style="font-size:11px;color:#636366;text-align:center;margin-top:8px;cursor:pointer;">Dismiss</div>' +
+            '</div>';
+        }
+
         // KPI PULSE
         // All spend values are negative from the sheet — display as negative
         var hasUnexp = kpi.unexpExp || kpi.unexpInc;
+        // Show Carrying KPI only during week 1 (days 1-7) and only if non-zero
+        var carrying = kpi.carrying || 0;
+        var showCarrying = carrying !== 0 && d.isWeek1;
         var kpiH = '<div class="dash-card">' +
             '<div class="dash-card-title">Monthly Pulse &mdash; ' + (d.month||"") + '</div>' +
             '<div class="kpi-grid">' +
@@ -3229,7 +3245,8 @@ function clearSynced() {
             '<div class="kpi-item"><div class="kpi-label">Variable Spent</div><div class="kpi-val neg">' + dfmt(kpi.varSpend) + '</div></div>' +
             (kpi.unexpExp ? '<div class="kpi-item"><div class="kpi-label">Unexpected Exp</div><div class="kpi-val neg">' + dfmt(kpi.unexpExp) + '</div></div>' : '') +
             (kpi.unexpInc ? '<div class="kpi-item"><div class="kpi-label">Unexpected Inc</div><div class="kpi-val pos">' + dfmt(kpi.unexpInc) + '</div></div>' : '') +
-            '<div class="kpi-item ' + (hasUnexp ? '' : 'fw') + '"><div class="kpi-label">Remaining</div><div class="kpi-val ' + rc + '">' + dfmt(rem) + '</div></div>' +
+            (showCarrying ? '<div class="kpi-item"><div class="kpi-label">Carrying</div><div class="kpi-val neg">' + dfmt(carrying) + '</div></div>' : '') +
+            '<div class="kpi-item ' + (hasUnexp || showCarrying ? '' : 'fw') + '"><div class="kpi-label">Remaining</div><div class="kpi-val ' + rc + '">' + dfmt(rem) + '</div></div>' +
             '</div></div>';
 
         // WEEKLY
@@ -3240,11 +3257,13 @@ function clearSynced() {
             var bc  = w.actual > w.allowance ? "over" : (pct > 80 ? "warn" : "ok");
             var rc2 = w.remaining >= 0 ? "#4CD964" : "#FF453A";
             var isc = i === wIdx;
+            var monRemLabel = isc ? '<div class="wk-mon-rem" style="font-size:10px;color:#636366;margin-top:2px;">Monthly remaining: <span style="color:' + (rem>=0?"#4CD964":"#FF453A") + '">' + dfmt(rem) + '</span></div>' : "";
             return '<div class="week-row' + (isc ? " curr" : "") + '">' +
                 '<div class="wk-lbl">' + (w.label||"") + (isc ? ' <span style="font-size:9px;color:#2E6B3E;font-weight:700;vertical-align:middle">NOW</span>' : '') + '</div>' +
                 '<div class="wk-bar-wrap"><div class="wk-bar ' + bc + '" style="width:' + pct.toFixed(0) + '%"></div></div>' +
                 '<div class="wk-amt">' + dfmt(w.actual) + '</div>' +
                 '<div class="wk-rem" style="color:' + rc2 + '">' + dfmt(w.remaining) + '</div>' +
+                monRemLabel +
             '</div>';
         }).join("");
         var weekH = '<div class="dash-card"><div class="dash-card-title">Weekly vs Allowance (' + dfmt(weeks[0] && weeks[0].allowance || 0) + '/wk)</div>' + wRows + '</div>';
@@ -3317,7 +3336,7 @@ function clearSynced() {
 
         document.getElementById("dashContainer").innerHTML =
             '<div class="dash-month">' + (d.month||"") + '</div>' +
-            kpiH + weekH + catH + txnH + goalH + portH;
+            celebH + kpiH + weekH + catH + txnH + goalH + portH;
     }
 
     // Auto-load on first switch to dashboard
@@ -3342,7 +3361,106 @@ function clearSynced() {
 
         // Attempt sync on load if items pending
         if (navigator.onLine && getAutoSync()) syncNow();
+
+        // ── ROLLOVER CONFIRMATION ─────────────────────────────────────────────
+        // Check if we need to show rollover confirmation for new month
+        checkRolloverConfirmation();
     };
+
+    function checkRolloverConfirmation() {
+        var now = new Date();
+        var currentYYYYMM = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+        var confirmed = localStorage.getItem("lastConfirmedMonth");
+        if (confirmed === currentYYYYMM) return; // already confirmed this month
+        // Fetch rollover data
+        gsr("getRolloverConfirmationData", null, function(res) {
+            if (!res || res.error) return;
+            if (!res.rolloverOn) {
+                // Rollover disabled — auto-confirm with 0
+                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                return;
+            }
+            var endBal = res.endBalance || 0;
+            // Only show modal if there's a negative balance to carry forward
+            if (endBal >= 0) {
+                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                // Check celebration
+                return;
+            }
+            showRolloverModal(res, currentYYYYMM);
+        });
+    }
+
+    function showRolloverModal(res, currentYYYYMM) {
+        var endBal  = res.endBalance || 0;
+        var cards   = res.cards || [];
+        var prevLbl = (res.prevMonth || "") + " " + (res.prevYear || "");
+        var hasCards = cards.length > 0;
+
+        // Build card split rows if cards defined
+        var cardRows = hasCards ? cards.map(function(c) {
+            return '<div class="ro-card-row">' +
+                '<span class="ro-card-name">' + c.name + '</span>' +
+                '<input type="number" class="ro-card-input" id="ro-card-' + c.name.replace(/\s+/g,"-") + '" ' +
+                'placeholder="0" min="0" step="0.01" value="0">' +
+            '</div>';
+        }).join("") : "";
+
+        var modal = document.createElement("div");
+        modal.id  = "rolloverModal";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+        modal.innerHTML =
+            '<div style="background:#1C1C1E;border-radius:16px;padding:24px;max-width:360px;width:100%;border:1px solid #2A2A2C;">' +
+            '<div style="font-size:13px;color:#8E8E93;margin-bottom:4px;">Month end — ' + prevLbl + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:#FF453A;margin-bottom:8px;">' + dfmt(endBal) + '</div>' +
+            '<div style="font-size:14px;color:#EBEBF5;margin-bottom:16px;">This balance will be spread evenly across this month's weekly allowance. Edit if needed.</div>' +
+            '<label style="font-size:12px;color:#8E8E93;">Carry-in amount</label>' +
+            '<input type="number" id="ro-amount" value="' + endBal.toFixed(2) + '" step="0.01" ' +
+            'style="width:100%;padding:10px;background:#2C2C2E;border:1px solid #3A3A3C;border-radius:8px;color:#FFF;font-size:16px;margin:6px 0 16px;">' +
+            (hasCards ?
+                '<div id="ro-card-toggle" onclick="toggleRoCards()" style="font-size:13px;color:#4CD964;cursor:pointer;margin-bottom:8px;">▶ Split across credit cards</div>' +
+                '<div id="ro-cards" style="display:none;margin-bottom:16px;">' +
+                '<div style="font-size:12px;color:#8E8E93;margin-bottom:8px;">Allocate carry-in per card (optional)</div>' +
+                cardRows + '</div>' : '') +
+            '<button onclick="confirmRolloverModal('' + currentYYYYMM + '')" ' +
+            'style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:10px;color:#FFF;font-size:16px;font-weight:700;cursor:pointer;">Confirm</button>' +
+            '</div>';
+        document.body.appendChild(modal);
+    }
+
+    function toggleRoCards() {
+        var el  = document.getElementById("ro-cards");
+        var btn = document.getElementById("ro-card-toggle");
+        if (el.style.display === "none") {
+            el.style.display = "block";
+            btn.textContent  = "▼ Split across credit cards";
+        } else {
+            el.style.display = "none";
+            btn.textContent  = "▶ Split across credit cards";
+        }
+    }
+
+    function confirmRolloverModal(currentYYYYMM) {
+        var amount   = parseFloat(document.getElementById("ro-amount").value) || 0;
+        var cardSplit = [];
+        var cards    = document.querySelectorAll(".ro-card-input");
+        cards.forEach(function(inp) {
+            var name = inp.id.replace("ro-card-","").replace(/-/g," ");
+            cardSplit.push({ name: name, amount: parseFloat(inp.value) || 0 });
+        });
+        gsr("confirmRollover", { carryIn: amount, cardSplit: cardSplit }, function(res) {
+            if (res && res.success) {
+                localStorage.setItem("lastConfirmedMonth", currentYYYYMM);
+                var modal = document.getElementById("rolloverModal");
+                if (modal) modal.remove();
+                // Reload dashboard if open
+                if (typeof dashLoaded !== "undefined") {
+                    dashLoaded = false;
+                    if (state.screen === "dashboard") loadDashboard();
+                }
+            }
+        }, "POST");
+    }
     </script>
 
 </div>
