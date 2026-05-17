@@ -3265,43 +3265,33 @@ function clearSynced() {
         var arcColor   = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#2E6B3E");
         var arcStroke  = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#4CD964");
 
-        // Arc geometry: cx=88, cy=88, r=72, strokeWidth=12
-        // Full circle circumference = 2*PI*72 = ~452.4
-        // We use a 240-degree arc (from 150deg to 390deg = 150deg to 30deg next)
+        // Full circle arc using stroke-dasharray trick
+        // Circle: cx=88, cy=88, r=72, circumference = 2*PI*72 = 452.39
         var R = 72; var CX = 88; var CY = 88; var SW = 12;
-        var arcLen   = 2 * Math.PI * R * (240/360); // 240deg arc
-        var fillLen  = arcLen * arcPct;
-        var gapLen   = arcLen - fillLen;
-        // SVG arc trick: dasharray = fillLen then gap; rotate so arc starts at -210deg (bottom-left)
-        var dashArr  = fillLen.toFixed(2) + " " + (arcLen - fillLen + 1).toFixed(2);
-        var dashArrBg = arcLen.toFixed(2) + " " + (2*Math.PI*R - arcLen + 1).toFixed(2);
-        // Path: large arc from 150deg to 30deg (clockwise)
-        function polar(cx, cy, r, deg) {
-            var rad = (deg - 90) * Math.PI / 180;
-            return { x: (cx + r * Math.cos(rad)).toFixed(2), y: (cy + r * Math.sin(rad)).toFixed(2) };
-        }
-        var s = polar(CX, CY, R, 150); // start
-        var e = polar(CX, CY, R, 30);  // end (150 + 240 = 390 = 30)
-        var arcPath = "M " + s.x + " " + s.y + " A " + R + " " + R + " 0 1 1 " + e.x + " " + e.y;
+        var CIRC = 2 * Math.PI * R;
+        var fillLen = (CIRC * arcPct).toFixed(2);
+        var gapLen  = (CIRC - CIRC * arcPct).toFixed(2);
+        var dashArr = fillLen + " " + gapLen;
+        // Circle path — use a circle element, rotate -90deg so fill starts at top
+        var arcPath = null; // not used for full circle
 
         var wkRemColor = (curW.remaining || 0) >= 0 ? "#4CD964" : "#FF453A";
         var arcSvg =
-            '<svg width="176" height="176" viewBox="0 0 176 176" style="display:block;margin:0 auto 4px;">' +
-            // Background track
-            '<path d="' + arcPath + '" fill="none" stroke="#2A2A2C" stroke-width="' + SW + '" stroke-linecap="round"/>' +
-            // Progress arc
-            '<path d="' + arcPath + '" fill="none" stroke="' + arcStroke + '" stroke-width="' + SW + '" stroke-linecap="round"' +
-            ' stroke-dasharray="' + dashArr + '" stroke-dashoffset="0"' +
+            '<div style="width:192px;margin:8px auto 0;text-align:center;position:relative;">' +
+            '<svg width="192" height="192" viewBox="0 0 192 192" style="display:block;transform:rotate(-90deg);">' +
+            '<circle cx="96" cy="96" r="' + R + '" fill="none" stroke="#2A2A2C" stroke-width="' + SW + '"/>' +
+            '<circle cx="96" cy="96" r="' + R + '" fill="none" stroke="' + arcStroke + '" stroke-width="' + SW + '"' +
+            ' stroke-dasharray="' + dashArr + '" stroke-linecap="round"' +
             ' style="transition:stroke-dasharray 0.6s ease;"/>' +
-            // Center: week remaining (large)
-            '<text x="88" y="80" text-anchor="middle" font-size="20" font-weight="700" fill="' + wkRemColor + '" font-family="Arial,sans-serif">' + dfmt(curW.remaining || 0) + '</text>' +
-            // Center: label
-            '<text x="88" y="98" text-anchor="middle" font-size="10" fill="#636366" font-family="Arial,sans-serif">week remaining</text>' +
-            // Center: pct used
-            '<text x="88" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#8E8E93" font-family="Arial,sans-serif">' + (arcPct*100).toFixed(0) + '% used</text>' +
-            // Bottom label: week dates
-            '<text x="88" y="154" text-anchor="middle" font-size="10" fill="#636366" font-family="Arial,sans-serif">' + (curW.label||"") + '</text>' +
-            '</svg>';
+            '</svg>' +
+            '<div style="position:absolute;top:0;left:0;width:100%;height:192px;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+            '<div style="font-size:22px;font-weight:700;color:' + wkRemColor + ';line-height:1.1;">' + dfmt(curW.remaining || 0) + '</div>' +
+            '<div style="font-size:10px;color:#636366;margin-top:3px;">week remaining</div>' +
+            '<div style="font-size:13px;font-weight:600;color:#8E8E93;margin-top:4px;">' + (arcPct*100).toFixed(0) + '% used</div>' +
+            '<div style="font-size:10px;color:#636366;margin-top:3px;">' + dfmt(arcAllow) + '/wk</div>' +
+            '</div>' +
+            '</div>' +
+            '<div style="font-size:11px;color:#636366;text-align:center;margin:4px 0 8px;">' + (curW.label||"") + '</div>';
 
         // ── Compact rows for all other weeks ─────────────────────────────────
         var otherRows = weeks.map(function(w, i) {
