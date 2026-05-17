@@ -5,7 +5,7 @@
 // ║  Forces all users' browsers to pull the new version      ║
 // ║  Match this to MIN_CODE_VERSION in index.html            ║
 // ╚══════════════════════════════════════════════════════════╝
-var CACHE_NAME  = "financials-v2.2.0";
+var CACHE_NAME  = "financials-v2.3.0";
 
 // ── Everything below rarely needs changing ────────────────────
 var REPO_PATH   = "/Personal-Finance-Tracker";
