@@ -3436,7 +3436,7 @@ function clearSynced() {
         var cardBals = d.cardBalances || [];
         if (cardBals.length > 0) {
             var cardRows2 = cardBals.map(function(cb) {
-                var balColor = cb.balance <= 0 ? "#4CD964" : "#FF6B6B";
+                var balColor = cb.balance <= 0 ? "#4CD964" : "#FF6B6B"; // positive = owed (red), zero/negative = paid (green)
                 var utilBar  = "";
                 if (cb.limit > 0) {
                     var utilPct = Math.min(Math.abs(cb.balance) / cb.limit * 100, 100);
@@ -3455,7 +3455,7 @@ function clearSynced() {
                     (cb.limit > 0 ? '<div style="font-size:10px;color:#636366;">Limit: ' + dfmt(cb.limit) + '</div>' : '') +
                     '</div>' +
                     '<div style="text-align:right;">' +
-                    '<div style="font-size:16px;font-weight:700;color:' + balColor + ';">' + dfmt(Math.abs(cb.balance)) + '</div>' +
+                    '<div style="font-size:16px;font-weight:700;color:' + balColor + ';">' + dfmt(cb.balance) + '</div>' +
                     '<div style="font-size:10px;color:#636366;">balance</div>' +
                     '</div>' +
                     '</div>' +
@@ -3621,11 +3621,14 @@ function clearSynced() {
     }
 
     function submitLogPayment(btn) {
+        if (btn.disabled) return; // prevent double-tap
+        btn.disabled = true;
+        btn.textContent = "Saving...";
         var cardName = btn.getAttribute("data-card");
         var amount   = parseFloat(document.getElementById("lpAmount").value);
         var date     = document.getElementById("lpDate").value;
-        if (!amount || amount <= 0) { alert("Enter a valid amount."); return; }
-        if (!date) { alert("Select a date."); return; }
+        if (!amount || amount <= 0) { btn.disabled = false; btn.textContent = "Save"; alert("Enter a valid amount."); return; }
+        if (!date) { btn.disabled = false; btn.textContent = "Save"; alert("Select a date."); return; }
         gsr()
             .withSuccessHandler(function(res) {
                 var modal = document.getElementById("logPaymentModal");
