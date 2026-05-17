@@ -3305,7 +3305,8 @@ function clearSynced() {
         var arcActual  = Math.abs(curW.actual || 0);
         // If monthly remaining ≤ 0, weekly remaining is capped at 0
         var monthlyOver  = rem <= 0;
-        var arcRemaining = monthlyOver ? Math.min(curW.remaining || 0, 0) : (curW.remaining || 0);
+        // When monthly budget exceeded, remaining shows $0.00 (never negative in the arc)
+        var arcRemaining = monthlyOver ? 0 : (curW.remaining || 0);
         // Visual fill: actual % used, capped at 100% for the circle
         // When monthly budget exceeded, fill arc 100% to signal full spend
         var arcPct    = monthlyOver ? 1 : (arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0);
