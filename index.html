@@ -3222,7 +3222,7 @@ function clearSynced() {
         var rc  = rem >= 0 ? "pos" : "neg";
 
         // ── CELEBRATION BANNER ────────────────────────────────────────────────
-        var celebKey = "celebrateDismissed-" + (d.month||"").replace(/\s/g,"-");
+        var celebKey = "celebrateDismissed-" + (d.month||"").split(" ").join("-");
         var celebH = "";
         if (d.celebrateSurplus && !localStorage.getItem(celebKey)) {
             celebH = '<div class="dash-card" style="background:linear-gradient(135deg,#1D4A2A,#2E6B3E);border:1px solid #4CD964;margin-bottom:12px;">' +
@@ -3406,7 +3406,7 @@ function clearSynced() {
         var cardRows = hasCards ? cards.map(function(c) {
             return '<div class="ro-card-row">' +
                 '<span class="ro-card-name">' + c.name + '</span>' +
-                '<input type="number" class="ro-card-input" id="ro-card-' + c.name.replace(/\s+/g,"-") + '" ' +
+                '<input type="number" class="ro-card-input" id="ro-card-' + c.name.split(" ").join("-") + '" ' +
                 'placeholder="0" min="0" step="0.01" value="0">' +
             '</div>';
         }).join("") : "";
