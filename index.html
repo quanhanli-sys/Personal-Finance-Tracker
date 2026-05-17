@@ -3260,14 +3260,14 @@ function clearSynced() {
         // ── SVG arc for current week ──────────────────────────────────────────
         var arcAllow   = curW.allowance || 0;
         var arcActual  = Math.abs(curW.actual || 0);
-        // If monthly remaining is at or below 0, weekly allowance is effectively 0
-        // Weekly remaining can never be positive when the month is already in deficit
-        var monthlyOver = rem <= 0;
+        // If monthly remaining ≤ 0, weekly remaining is capped at 0
+        var monthlyOver  = rem <= 0;
         var arcRemaining = monthlyOver ? Math.min(curW.remaining || 0, 0) : (curW.remaining || 0);
-        var arcPct     = monthlyOver ? 1 : (arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0);
-        var arcOver    = monthlyOver || arcActual > arcAllow;
-        var arcColor   = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#2E6B3E");
-        var arcStroke  = arcOver ? "#FF453A" : (arcPct > 0.8 ? "#FF9F0A" : "#4CD964");
+        // Visual fill: actual % used, capped at 100% for the circle
+        var arcPct    = arcAllow > 0 ? Math.min(arcActual / arcAllow, 1) : 0;
+        var arcOver   = monthlyOver || arcActual > arcAllow;
+        // Color: green → amber at 80% → red only when genuinely over
+        var arcStroke = arcOver ? "#FF6B6B" : (arcPct > 0.8 ? "#FF9F0A" : "#4CD964");
 
         // Full circle arc using stroke-dasharray trick
         // Circle: cx=88, cy=88, r=72, circumference = 2*PI*72 = 452.39
@@ -3279,7 +3279,7 @@ function clearSynced() {
         // Circle path — use a circle element, rotate -90deg so fill starts at top
         var arcPath = null; // not used for full circle
 
-        var wkRemColor = (arcRemaining >= 0 && !monthlyOver) ? "#4CD964" : "#FF453A";
+        var wkRemColor = arcRemaining >= 0 ? "#4CD964" : "#FF6B6B";
         var arcSvg =
             '<div style="width:192px;margin:8px auto 0;text-align:center;position:relative;">' +
             '<svg width="192" height="192" viewBox="0 0 192 192" style="display:block;transform:rotate(-90deg);">' +
@@ -3289,9 +3289,9 @@ function clearSynced() {
             ' style="transition:stroke-dasharray 0.6s ease;"/>' +
             '</svg>' +
             '<div style="position:absolute;top:0;left:0;width:100%;height:192px;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
-            '<div style="font-size:22px;font-weight:700;color:' + wkRemColor + ';line-height:1.1;">' + (monthlyOver ? 'Over budget' : dfmt(arcRemaining)) + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:' + wkRemColor + ';line-height:1.1;">' + dfmt(arcRemaining) + '</div>' +
             '<div style="font-size:10px;color:#636366;margin-top:3px;">week remaining</div>' +
-            '<div style="font-size:13px;font-weight:600;color:#8E8E93;margin-top:4px;">' + (arcPct*100).toFixed(0) + '% used</div>' +
+            '<div style="font-size:13px;font-weight:600;color:#8E8E93;margin-top:4px;">' + (arcAllow > 0 ? (arcActual/arcAllow*100).toFixed(0) : 0) + '% used</div>' +
             '<div style="font-size:10px;color:#636366;margin-top:3px;">' + dfmt(arcAllow) + '/wk</div>' +
             '</div>' +
             '</div>' +
