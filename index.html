@@ -442,6 +442,13 @@
                 <span class="field-val" id="txnAccDisplay">Credit</span>
                 <span class="field-arrow">›</span>
             </div>
+            <!-- Card sub-field: only shown when Account=Credit AND cards defined in Input Hub -->
+            <div class="field-row tappable hidden" id="cardRow" onclick="openPicker('card')">
+                <div class="field-icon" style="background:#1D4A2A"><svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><circle cx="7" cy="15" r="1" fill="currentColor"/></svg></div>
+                <span class="field-label-txt">Card</span>
+                <span class="field-val" id="cardDisplay">Select card</span>
+                <span class="field-arrow">›</span>
+            </div>
             <div class="field-row">
                 <div class="field-icon"><svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
                 <span class="field-label-txt">Description</span>
@@ -936,7 +943,13 @@
             <div id="catOpts"></div>
         </div>
     </div>
-    <div class="overlay" id="txnAccSheet" onclick="closeSheet('txnAccSheet')">
+    <div class="overlay" id="cardSheet" onclick="closeSheet('cardSheet')">
+        <div class="sheet" onclick="event.stopPropagation()">
+            <div class="sheet-hdr">Credit Card <span class="sheet-close" onclick="closeSheet('cardSheet')">Done</span></div>
+            <div id="cardOpts"></div>
+        </div>
+    </div>
+        <div class="overlay" id="txnAccSheet" onclick="closeSheet('txnAccSheet')">
         <div class="sheet" onclick="event.stopPropagation()">
             <div class="sheet-hdr">Account <span class="sheet-close" onclick="closeSheet('txnAccSheet')">Done</span></div>
             <div id="txnAccOpts"></div>
@@ -1173,7 +1186,16 @@
                 if (c.knownTickers) cfg.knownTickers = c.knownTickers;
                 // Only reset category display if on Expense AND no custom category is being typed
                 if (state.type === "Expense" && !state.customCategory) {
-                    state.category = cfg.categories[0];
+                                // Init card from localStorage or first card
+            if (cfg.cards && cfg.cards.length > 0) {
+                var savedCard = localStorage.getItem("lastUsedCard");
+                var validCard = cfg.cards.some(function(c) { return c.name === savedCard; });
+                state.card = validCard ? savedCard : cfg.cards[0].name;
+                var dispEl = document.getElementById("cardDisplay");
+                if (dispEl) dispEl.textContent = state.card;
+            }
+            updateCardRowVisibility();
+            state.category = cfg.categories[0];
                     document.getElementById("catDisplay").textContent = cfg.categories[0];
                 }
                 state.updateTicker = cfg.knownTickers[0] || "401k";
@@ -1298,6 +1320,8 @@
     // ══════════════════════════════════════════════════════════
     function setType(t) {
         state.type = t;
+        // Show card row only for Expense with Credit account and cards defined
+        updateCardRowVisibility();
         ["Expense","Income","Transfer"].forEach(function(x) {
             document.getElementById("btn-" + x).className =
                 "type-btn" + (x === t ? " active-" + t.toLowerCase() : "");
@@ -1613,6 +1637,14 @@
             return '<div class="sheet-opt' + (t === state.updateTicker ? ' selected' : '') +
                    '" onclick="selectUpdateTicker(\'' + t + '\')">' + t + '</div>';
         }).join("");
+        var cardOpts = document.getElementById("cardOpts");
+        if (cardOpts) {
+            var cards2 = (cfg && cfg.cards) ? cfg.cards : [];
+            cardOpts.innerHTML = cards2.map(function(c) {
+                return '<div class="sheet-opt' + (c.name === state.card ? ' selected' : '') +
+                       '" onclick="selectCard(\'' + c.name.split("'").join("\\'") + '\')">' + c.name + '</div>';
+            }).join("");
+        }
     }
 
     function encodeOpt(s) { return s.replace(/'/g,"\\'").replace(/&/g,"__AMP__"); }
@@ -1644,6 +1676,13 @@
         state.category = trimmed || "Other";
         document.getElementById("catDisplay").textContent = trimmed || "New category…";
     }
+    function selectCard(name) {
+        state.card = name;
+        localStorage.setItem("lastUsedCard", name);
+        document.getElementById("cardDisplay").textContent = name;
+        closeSheet("cardSheet");
+    }
+
     function selectTxnAcc(a) {
         state.txnAccount = a;
         document.getElementById("txnAccDisplay").textContent = a;
@@ -1651,6 +1690,7 @@
         document.getElementById("txnAccIcon").innerHTML = a === "Checking"
             ? '<svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7 12 2"/></svg>'
             : '<svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
+        updateCardRowVisibility();
         closeSheet("txnAccSheet");
     }
     function selectAssetAcc(a)     { state.assetAccount = a; document.getElementById("assetAccDisplay").textContent = a; closeSheet("assetAccSheet"); }
@@ -1943,7 +1983,8 @@ function clearSynced() {
         var payload = {
             type: state.type, amount: Math.abs(finalAmt),
             description: finalDesc, category: finalCat,
-            account: state.txnAccount, note: "", date: date, signed: finalAmt
+            account: state.txnAccount, note: "", date: date, signed: finalAmt,
+            card: (state.txnAccount === "Credit" && state.card) ? state.card : ""
         };
 
         var sign     = finalAmt < 0 ? "−" : "+";
@@ -3279,7 +3320,7 @@ function clearSynced() {
         // Circle path — use a circle element, rotate -90deg so fill starts at top
         var arcPath = null; // not used for full circle
 
-        var wkRemColor = arcRemaining >= 0 ? "#4CD964" : "#FF6B6B";
+        var wkRemColor = (arcRemaining > 0 && !monthlyOver) ? "#4CD964" : "#FF6B6B";
         var arcSvg =
             '<div style="width:192px;margin:8px auto 0;text-align:center;position:relative;">' +
             '<svg width="192" height="192" viewBox="0 0 192 192" style="display:block;transform:rotate(-90deg);">' +
@@ -3384,9 +3425,45 @@ function clearSynced() {
             (hcards ? '<div class="port-grid">' + hcards + '</div>' : '') +
         '</div>';
 
+        // ── CARD BALANCES ─────────────────────────────────────────────────────
+        var cardBalH = "";
+        var cardBals = d.cardBalances || [];
+        if (cardBals.length > 0) {
+            var cardRows2 = cardBals.map(function(cb) {
+                var balColor = cb.balance <= 0 ? "#4CD964" : "#FF6B6B";
+                var utilBar  = "";
+                if (cb.limit > 0) {
+                    var utilPct = Math.min(Math.abs(cb.balance) / cb.limit * 100, 100);
+                    var utilColor = utilPct > 80 ? "#FF6B6B" : (utilPct > 50 ? "#FF9F0A" : "#4CD964");
+                    utilBar = '<div style="margin-top:4px;">' +
+                        '<div style="display:flex;justify-content:space-between;font-size:10px;color:#636366;margin-bottom:3px;">' +
+                        '<span>Utilization</span><span>' + utilPct.toFixed(1) + '%</span></div>' +
+                        '<div style="height:4px;background:#2A2A2C;border-radius:2px;">' +
+                        '<div style="height:4px;width:' + utilPct.toFixed(1) + '%;background:' + utilColor + ';border-radius:2px;"></div>' +
+                        '</div></div>';
+                }
+                return '<div style="background:#111114;border-radius:10px;padding:12px;margin-bottom:8px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+                    '<div>' +
+                    '<div style="font-size:13px;font-weight:600;color:#EBEBF5;">' + cb.name + '</div>' +
+                    (cb.limit > 0 ? '<div style="font-size:10px;color:#636366;">Limit: ' + dfmt(cb.limit) + '</div>' : '') +
+                    '</div>' +
+                    '<div style="text-align:right;">' +
+                    '<div style="font-size:16px;font-weight:700;color:' + balColor + ';">' + dfmt(Math.abs(cb.balance)) + '</div>' +
+                    '<div style="font-size:10px;color:#636366;">balance</div>' +
+                    '</div>' +
+                    '</div>' +
+                    utilBar +
+                    '<button onclick="openLogPayment(' + "'" + cb.name + "'" + ')" ' +
+                    'style="width:100%;margin-top:10px;padding:8px;background:#1D4A2A;border:1px solid #2E6B3E;border-radius:8px;color:#4CD964;font-size:12px;font-weight:600;cursor:pointer;">Log Payment</button>' +
+                    '</div>';
+            }).join("");
+            cardBalH = '<div class="dash-card"><div class="dash-card-title">Card Balances</div>' + cardRows2 + '</div>';
+        }
+
         document.getElementById("dashContainer").innerHTML =
             '<div class="dash-month">' + (d.month||"") + '</div>' +
-            celebH + kpiH + weekH + catH + txnH + goalH + portH;
+            celebH + kpiH + weekH + catH + txnH + goalH + portH + cardBalH;
     }
 
     // Auto-load on first switch to dashboard
@@ -3478,6 +3555,63 @@ function clearSynced() {
             'style="width:100%;padding:14px;background:#2E6B3E;border:none;border-radius:10px;color:#FFF;font-size:16px;font-weight:700;cursor:pointer;">Confirm</button>' +
             '</div>';
         document.body.appendChild(modal);
+    }
+
+    // ── LOG PAYMENT ─────────────────────────────────────────────────────────
+    function openLogPayment(cardName) {
+        // Create inline modal for payment logging
+        var existing = document.getElementById("logPaymentModal");
+        if (existing) existing.remove();
+        var modal = document.createElement("div");
+        modal.id = "logPaymentModal";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+        modal.innerHTML =
+            '<div style="background:#1C1C1E;border-radius:16px;padding:24px;max-width:320px;width:100%;border:1px solid #2A2A2C;">' +
+            '<div style="font-size:16px;font-weight:700;color:#EBEBF5;margin-bottom:4px;">Log Payment</div>' +
+            '<div style="font-size:13px;color:#8E8E93;margin-bottom:16px;">' + cardName + '</div>' +
+            '<label style="font-size:12px;color:#8E8E93;">Payment amount</label>' +
+            '<input type="number" id="lpAmount" placeholder="0.00" min="0" step="0.01" ' +
+            'style="width:100%;padding:10px;background:#2C2C2E;border:1px solid #3A3A3C;border-radius:8px;color:#FFF;font-size:16px;margin:6px 0 16px;box-sizing:border-box;">' +
+            '<label style="font-size:12px;color:#8E8E93;">Date</label>' +
+            '<input type="date" id="lpDate" style="width:100%;padding:10px;background:#2C2C2E;border:1px solid #3A3A3C;border-radius:8px;color:#FFF;font-size:14px;margin:6px 0 16px;box-sizing:border-box;color-scheme:dark;">' +
+            '<div style="display:flex;gap:10px;">' +
+            '<button onclick="document.getElementById('logPaymentModal').remove()" ' +
+            'style="flex:1;padding:12px;background:#2C2C2E;border:1px solid #3A3A3C;border-radius:10px;color:#8E8E93;font-size:14px;cursor:pointer;">Cancel</button>' +
+            '<button data-card="' + cardName + '" onclick="submitLogPayment(this)" ' +
+            'style="flex:1;padding:12px;background:#2E6B3E;border:none;border-radius:10px;color:#FFF;font-size:14px;font-weight:700;cursor:pointer;">Save</button>' +
+            '</div></div>';
+        document.body.appendChild(modal);
+        // Set today as default date
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm   = String(today.getMonth()+1).padStart(2,"0");
+        var dd   = String(today.getDate()).padStart(2,"0");
+        document.getElementById("lpDate").value = yyyy + "-" + mm + "-" + dd;
+        document.getElementById("lpAmount").focus();
+    }
+
+    function submitLogPayment(btn) {
+        var cardName = btn.getAttribute("data-card");
+        var amount   = parseFloat(document.getElementById("lpAmount").value);
+        var date     = document.getElementById("lpDate").value;
+        if (!amount || amount <= 0) { alert("Enter a valid amount."); return; }
+        if (!date) { alert("Select a date."); return; }
+        gsr()
+            .withSuccessHandler(function(res) {
+                var modal = document.getElementById("logPaymentModal");
+                if (modal) modal.remove();
+                if (res && res.success) {
+                    showToast("Payment of " + dfmt(amount) + " logged for " + cardName, "success");
+                    dashLoaded = false;
+                    if (state.screen === "dashboard") loadDashboard();
+                } else {
+                    showToast("Payment failed — try again", "error");
+                }
+            })
+            .withFailureHandler(function() {
+                showToast("Payment failed — try again", "error");
+            })
+            .logCardPayment({ cardName: cardName, amount: amount, date: date });
     }
 
     function dismissCelebration(el) {
