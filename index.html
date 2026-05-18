@@ -375,6 +375,17 @@
     .dash-spin{width:34px;height:34px;border:3px solid #2A2A2C;border-top-color:#2E6B3E;border-radius:50%;animation:spin .8s linear infinite}
     .dash-err{text-align:center;padding:32px;color:#8E8E93;font-size:14px;line-height:1.6}
 
+    /* ── QUICK RE-LOG CHIPS ─────────────────────── */
+    .chips-wrap{padding:10px 12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;scrollbar-width:none}
+    .chips-wrap::-webkit-scrollbar{display:none}
+    .chips-label{font-size:9px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+    .chip{display:inline-flex;flex-direction:column;align-items:flex-start;background:#1C1C1E;border:1px solid #2A2A2C;border-radius:10px;padding:7px 10px;margin-right:8px;cursor:pointer;vertical-align:top;max-width:110px;transition:background .15s ease,border-color .15s ease}
+    .chip:active{background:#2A2A2C;border-color:#3A3A3C}
+    .chip-cat{font-size:10px;font-weight:700;color:#EBEBF5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+    .chip-amt{font-size:12px;font-weight:600;color:#FF6B6B;margin-top:2px;font-variant-numeric:tabular-nums}
+    .chip-amt.pos{color:#4CD964}
+    .chip-desc{font-size:9px;color:#636366;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+
     /* ── COUNT-UP number animation ── */
     @keyframes countFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
     .count-anim{animation:countFadeIn .4s ease forwards}
@@ -432,6 +443,11 @@
             <span class="header-title" id="txnTitle">Expense</span>
             <span class="save-flash" id="txnFlash">Saved ✓</span>
             <span class="header-value negative" id="txnHeaderValue"></span>
+        </div>
+        <!-- Quick re-log chips — populated when dashData is available -->
+        <div id="chipsWrap" class="chips-wrap" style="display:none">
+            <div class="chips-label">Tap to re-log</div>
+            <div id="chipsRow"></div>
         </div>
         <div class="type-toggle">
             <button class="type-btn active-expense" id="btn-Expense"  onclick="setType('Expense')">EXPENSE</button>
@@ -1298,6 +1314,7 @@
         });
         state.screen = name;
         if (name === "import") loadDescPref();
+        if (name === "log") renderChips();
     }
 
     function openSyncSheet() {
@@ -3260,7 +3277,7 @@ function clearSynced() {
             '<div class="dash-spin-wrap"><div class="dash-spin"></div><span style="color:#636366;font-size:13px">Loading...</span></div>';
         gsr()
             .withSuccessHandler(function(d) {
-                if (d && !d.error) { dashData = d; dashLoaded = true; renderDashboard(d); }
+                if (d && !d.error) { dashData = d; dashLoaded = true; renderDashboard(d); renderChips(); }
                 else document.getElementById("dashContainer").innerHTML =
                     '<div class="dash-err">&#x26A0;&#xFE0F; ' + (d && d.error ? d.error : "Could not load data") + '</div>';
             })
@@ -3777,6 +3794,87 @@ function clearSynced() {
     }
 
     // ── LOG PAYMENT ─────────────────────────────────────────────────────────
+    // ── QUICK RE-LOG CHIPS ───────────────────────────────────────────────────
+    function renderChips() {
+        if (!dashData || !dashData.recent) return;
+        var recent = dashData.recent.filter(function(t) { return t.amount < 0; }); // expenses only
+        // Deduplicate by category — keep the most recent per category (up to 4)
+        var seen = {};
+        var chips = [];
+        for (var i = 0; i < recent.length && chips.length < 4; i++) {
+            var t = recent[i];
+            var k = t.category + "|" + t.account;
+            if (seen[k]) continue;
+            seen[k] = true;
+            chips.push(t);
+        }
+        if (chips.length === 0) return;
+        var row = document.getElementById("chipsRow");
+        var wrap = document.getElementById("chipsWrap");
+        if (!row || !wrap) return;
+        row.innerHTML = chips.map(function(t, i) {
+            var amt = Math.abs(t.amount);
+            var amtStr = "$" + amt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+            var desc = t.desc ? t.desc : "";
+            return '<div class="chip" data-idx="' + i + '" onclick="fillFromChip(' + i + ')">' +
+                '<div class="chip-cat">' + (CAT_EMOJI[t.category] || "") + " " + t.category + '</div>' +
+                '<div class="chip-amt">' + amtStr + '</div>' +
+                (desc ? '<div class="chip-desc">' + desc + '</div>' : '') +
+            '</div>';
+        }).join("");
+        // Store chip data for fillFromChip access
+        window._chipData = chips;
+        wrap.style.display = "block";
+    }
+
+    function fillFromChip(idx) {
+        var chips = window._chipData || [];
+        var t = chips[idx];
+        if (!t) return;
+        // Set type to Expense
+        setType("Expense");
+        // Set amount (positive display, negative stored)
+        var absAmt = Math.abs(t.amount);
+        state.amount = absAmt.toString();
+        document.getElementById("amtInput").value = absAmt;
+        document.getElementById("amtText").textContent = absAmt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById("amtDisplay").classList.add("negative");
+        // Set category
+        state.category = t.category;
+        state.customCategory = "";
+        document.getElementById("catDisplay").textContent = t.category;
+        // Set account
+        state.txnAccount = t.account || "Credit";
+        document.getElementById("txnAccDisplay").textContent = state.txnAccount;
+        var isExp = true;
+        document.getElementById("txnAccIcon").className = "field-icon " + (isExp ? "red" : "green");
+        // Set card if applicable
+        if (t.card && t.account === "Credit") {
+            state.card = t.card;
+            var cardDisp = document.getElementById("cardDisplay");
+            if (cardDisp) cardDisp.textContent = t.card;
+            localStorage.setItem("lastUsedCard", t.card);
+        }
+        updateCardRowVisibility();
+        // Set description
+        var descEl = document.getElementById("descInput");
+        if (descEl) descEl.value = t.desc || "";
+        // Set today date
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm = String(today.getMonth()+1).padStart(2,"0");
+        var dd = String(today.getDate()).padStart(2,"0");
+        var dateEl = document.getElementById("dateInput");
+        if (dateEl) dateEl.value = yyyy + "-" + mm + "-" + dd;
+        state.date = yyyy + "-" + mm + "-" + dd;
+        // Visual feedback — briefly highlight chip
+        var chip = document.querySelector(".chip[data-idx='" + idx + "']");
+        if (chip) {
+            chip.style.borderColor = "#4CD964";
+            setTimeout(function() { chip.style.borderColor = ""; }, 600);
+        }
+    }
+
     function updateCardRowVisibility() {
         var cards = (cfg && cfg.cards) ? cfg.cards : [];
         var isCredit  = (state.txnAccount || "").toLowerCase() === "credit";
