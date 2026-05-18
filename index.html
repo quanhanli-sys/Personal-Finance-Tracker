@@ -455,11 +455,6 @@
             </div>
         </div>
         <div class="divider"></div>
-        <!-- Quick re-log chips — shown below amount, above fields -->
-        <div id="chipsWrap" style="display:none;padding:0 12px 10px;">
-            <div style="font-size:9px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">Tap to re-log</div>
-            <div id="chipsRow" style="display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:8px;padding-bottom:2px;scrollbar-width:none;"></div>
-        </div>
         <div class="fields">
             <div class="field-row tappable" id="catRow" onclick="openPicker('cat')">
                 <div class="field-icon"><svg width="16" height="16" stroke="currentColor" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
@@ -523,6 +518,11 @@
             </div>
         </div>
         <div class="save-area">
+            <!-- Quick re-log chips tray — sits just above SAVE button -->
+            <div id="chipsWrap" style="display:none;margin-bottom:10px;">
+                <div style="font-size:9px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">RECENT — TAP TO RE-LOG</div>
+                <div id="chipsRow" style="display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:8px;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none;"></div>
+            </div>
             <button class="save-btn" id="txnSaveBtn" onclick="saveTransaction()">SAVE</button>
         </div>
     </div>
@@ -3799,13 +3799,13 @@ function clearSynced() {
     // ── QUICK RE-LOG CHIPS ───────────────────────────────────────────────────
     function renderChips() {
         if (!dashData || !dashData.recent) return;
-        // Filter recent by current type: expense=negative, income=positive, transfer=either direction
+        // Filter recent by current type
         var currentType = state.type || "Expense";
         var recent = dashData.recent.filter(function(t) {
-            if (currentType === "Expense")  return t.amount < 0 && t.category !== "Unexpected Income";
-            if (currentType === "Income")   return t.amount > 0 || t.category === "Unexpected Income";
-            if (currentType === "Transfer") return t.category === "Unexpected Expense" || t.category === "Unexpected Income";
-            return t.amount < 0;
+            if (currentType === "Expense")  return t.amount < 0 && t.category !== "Unexpected Expense" && t.category !== "Unexpected Income";
+            if (currentType === "Income")   return t.category === "Unexpected Income";
+            if (currentType === "Transfer") return t.category === "Unexpected Expense";
+            return false;
         });
         // Deduplicate by category — keep the most recent per category (up to 4)
         var seen = {};
