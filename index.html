@@ -297,7 +297,7 @@
     .dash-container{padding:12px;overflow-y:auto;height:calc(100vh - 120px);padding-bottom:80px}
     .dash-month{font-size:11px;font-weight:700;color:#636366;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
     /* Card base + entrance animation */
-    .dash-card{background:#1C1C1E;border-radius:16px;border:1px solid #2A2A2C;padding:16px;margin-bottom:10px;position:relative;overflow:hidden;opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease}
+    .dash-card{background:#1C1C1E;border-radius:16px;border:1px solid #2A2A2C;padding:16px;margin-bottom:10px;position:relative;overflow:hidden;opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s ease}
     .dash-card.visible{opacity:1;transform:translateY(0)}
     .dash-card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(46,107,62,.5),transparent)}
     .dash-card-title{font-size:10px;font-weight:700;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
@@ -319,7 +319,7 @@
     .week-row:last-child{border-bottom:none}
     .wk-lbl{font-size:10px;color:#8E8E93;min-width:72px}
     .wk-bar-wrap{flex:1;height:4px;background:#2A2A2C;border-radius:2px;overflow:hidden}
-    .wk-bar{height:100%;border-radius:2px;width:0;transition:width .6s cubic-bezier(.4,0,.2,1)}
+    .wk-bar{height:100%;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
     .wk-bar.ok{background:#2E6B3E}.wk-bar.warn{background:#FF9F0A}.wk-bar.over{background:#FF6B6B}
     .wk-amt{font-size:11px;font-weight:700;color:#fff;min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
     .wk-rem{font-size:10px;min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
@@ -330,7 +330,7 @@
     .cat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
     .cat-name{font-size:12px;color:#EBEBF5;flex:1}
     .cat-bw{width:80px;height:3px;background:#2A2A2C;border-radius:2px;overflow:hidden}
-    .cat-b{height:100%;border-radius:2px;width:0;transition:width .65s cubic-bezier(.4,0,.2,1)}
+    .cat-b{height:100%;border-radius:2px;width:0;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
     .cat-amt{font-size:12px;font-weight:600;color:#FF6B6B;min-width:60px;text-align:right;font-variant-numeric:tabular-nums}
     .cat-amt.inc{color:#4CD964}
 
@@ -351,7 +351,7 @@
     .goal-name{font-size:13px;font-weight:600;color:#fff}
     .goal-pct{font-size:12px;font-weight:700;color:#4CD964}
     .goal-bw{height:4px;background:#2A2A2C;border-radius:2px;overflow:hidden;margin-bottom:5px}
-    .goal-b{height:100%;border-radius:2px;background:linear-gradient(90deg,#1D4A2A,#4CD964);width:0;transition:width .8s cubic-bezier(.4,0,.2,1)}
+    .goal-b{height:100%;border-radius:2px;background:linear-gradient(90deg,#1D4A2A,#4CD964);width:0;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
     .goal-ft{display:flex;justify-content:space-between}
     .goal-cur{font-size:11px;color:#8E8E93}.goal-tgt{font-size:11px;color:#636366}
 
@@ -360,9 +360,9 @@
     .port-val{font-size:28px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
     .port-gain{font-size:13px;font-weight:600}
     .port-gain-bar-wrap{height:3px;background:#2A2A2C;border-radius:2px;overflow:hidden;margin-bottom:12px}
-    .port-gain-bar{height:100%;border-radius:2px;width:0;transition:width .8s cubic-bezier(.4,0,.2,1)}
+    .port-gain-bar{height:100%;border-radius:2px;width:0;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
     .port-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .hld-card{background:#111114;border-radius:10px;border:1px solid #2A2A2C;padding:10px;opacity:0;transform:translateY(6px);transition:opacity .3s ease,transform .3s ease}
+    .hld-card{background:#111114;border-radius:10px;border:1px solid #2A2A2C;padding:10px;opacity:0;transform:translateY(6px);transition:opacity .6s ease,transform .6s ease}
     .hld-card.visible{opacity:1;transform:translateY(0)}
     .hld-ticker{font-size:13px;font-weight:700;color:#fff}
     .hld-acct{font-size:9px;color:#636366;text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
@@ -3415,7 +3415,7 @@ function clearSynced() {
             '<circle cx="96" cy="96" r="' + R + '" fill="none" stroke="#2A2A2C" stroke-width="' + SW + '"/>' +
             '<circle id="arc-progress" cx="96" cy="96" r="' + R + '" fill="none" stroke="' + arcStroke + '" stroke-width="' + SW + '"' +
             ' stroke-dasharray="0 ' + CIRC.toFixed(2) + '" stroke-linecap="round"' +
-            ' style="transition:stroke-dasharray .8s cubic-bezier(.4,0,.2,1);"/>' +
+            ' style="transition:stroke-dasharray 1.4s cubic-bezier(.4,0,.2,1);"/>' +
             '</svg>' +
             '<div style="position:absolute;top:0;left:0;width:100%;height:192px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;box-sizing:border-box;">' +
             '<div id="arc-rem-val" style="font-size:22px;font-weight:700;color:' + wkRemColor + ';line-height:1.1;">' + dfmt(arcRemaining) + '</div>' +
@@ -3479,7 +3479,7 @@ function clearSynced() {
                         '<div style="display:flex;justify-content:space-between;font-size:10px;color:#636366;margin-bottom:3px;">' +
                         '<span>Utilization</span><span>' + utilPct.toFixed(1) + '%</span></div>' +
                         '<div style="height:4px;background:#2A2A2C;border-radius:2px;overflow:hidden;">' +
-                        '<div id="' + uid + '" style="height:4px;width:0;background:' + utilColor + ';border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1);"></div>' +
+                        '<div id="' + uid + '" style="height:4px;width:0;background:' + utilColor + ';border-radius:2px;transition:width 1.3s cubic-bezier(.4,0,.2,1);"></div>' +
                         '</div></div>';
                 }
                 return '<div style="background:#111114;border-radius:10px;padding:12px;margin-bottom:8px;">' +
@@ -3583,21 +3583,21 @@ function clearSynced() {
                             var ps2 = document.getElementById("pseg-var");
                             var ps3 = document.getElementById("pseg-unexp");
                             var ps4 = document.getElementById("pseg-rem");
-                            if (ps1) { ps1.style.transition = "width .9s cubic-bezier(.4,0,.2,1)"; ps1.style.width = fixedPct.toFixed(1) + "%"; }
+                            if (ps1) { ps1.style.transition = "width 1.4s cubic-bezier(.4,0,.2,1)"; ps1.style.width = fixedPct.toFixed(1) + "%"; }
                             setTimeout(function() {
-                                if (ps2) { ps2.style.transition = "width .85s cubic-bezier(.4,0,.2,1)"; ps2.style.width = varPct.toFixed(1) + "%"; }
+                                if (ps2) { ps2.style.transition = "width 1.3s cubic-bezier(.4,0,.2,1)"; ps2.style.width = varPct.toFixed(1) + "%"; }
                             }, 150);
                             setTimeout(function() {
-                                if (ps3) { ps3.style.transition = "width .8s cubic-bezier(.4,0,.2,1)"; ps3.style.width = unexpPct.toFixed(1) + "%"; }
-                                if (ps4) { ps4.style.transition = "width .8s cubic-bezier(.4,0,.2,1)"; ps4.style.width = remPct.toFixed(1) + "%"; }
+                                if (ps3) { ps3.style.transition = "width 1.2s cubic-bezier(.4,0,.2,1)"; ps3.style.width = unexpPct.toFixed(1) + "%"; }
+                                if (ps4) { ps4.style.transition = "width 1.2s cubic-bezier(.4,0,.2,1)"; ps4.style.width = remPct.toFixed(1) + "%"; }
                             }, 280);
                         }, 120);
                         // Count-up numbers
                         setTimeout(function() {
-                            countUp(document.getElementById("pv-takehome"), takeHome,  900, "", "", false);
-                            countUp(document.getElementById("pv-fixed"),    fixedExp,  900, "", "", true);
-                            countUp(document.getElementById("pv-var"),      varSpend,  900, "", "", true);
-                            countUp(document.getElementById("pv-rem"),      Math.abs(rem), 900, "", "", rem < 0);
+                            countUp(document.getElementById("pv-takehome"), takeHome,  1400, "", "", false);
+                            countUp(document.getElementById("pv-fixed"),    fixedExp,  1400, "", "", true);
+                            countUp(document.getElementById("pv-var"),      varSpend,  1400, "", "", true);
+                            countUp(document.getElementById("pv-rem"),      Math.abs(rem), 1400, "", "", rem < 0);
                         }, 200);
 
                     } else if (cardKey === "week") {
@@ -3609,7 +3609,7 @@ function clearSynced() {
                                 var gapLen  = (CIRC - CIRC * arcPct).toFixed(2);
                                 arcEl.setAttribute("stroke-dasharray", fillLen + " " + gapLen);
                             }
-                            countUp(document.getElementById("arc-rem-val"), arcRemaining, 900, "", "", false);
+                            countUp(document.getElementById("arc-rem-val"), arcRemaining, 1400, "", "", false);
                         }, 200);
                         // Other week bars
                         setTimeout(function() {
