@@ -3358,12 +3358,17 @@ function clearSynced() {
             '<div class="dash-card-title">Monthly Pulse &mdash; ' + (d.month||"") + '</div>' +
             // Stacked bar
             '<div class="pulse-stack-wrap" id="pulse-stack">' +
-            '<div class="pulse-seg" id="pseg-fixed"  style="left:0%;width:0%;background:#7A1A1A;"></div>' +
-            '<div class="pulse-seg" id="pseg-var"    style="left:' + fixedPct.toFixed(1) + '%;width:0%;background:#B84A1A;"></div>' +
-            '<div class="pulse-seg" id="pseg-unexp"  style="left:' + (fixedPct+varPct).toFixed(1) + '%;width:0%;background:#9A3A2A;"></div>' +
+            '<div class="pulse-seg" id="pseg-fixed"  style="left:0%;width:0%;background:#C0392B;"></div>' +
+            '<div class="pulse-seg" id="pseg-var"    style="left:' + fixedPct.toFixed(1) + '%;width:0%;background:#FF9F0A;"></div>' +
+            '<div class="pulse-seg" id="pseg-unexp"  style="left:' + (fixedPct+varPct).toFixed(1) + '%;width:0%;background:#E74C3C;"></div>' +
             '<div class="pulse-seg" id="pseg-rem"    style="left:' + (fixedPct+varPct+unexpPct).toFixed(1) + '%;width:0%;background:' + remColor + ';border-radius:0 5px 5px 0;"></div>' +
             '</div>' +
             // Labels under bar — 3 columns: fixed | variable | remaining
+            '<div style="display:flex;gap:12px;margin-bottom:10px;">' +
+            '<div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#C0392B;"></div><span style="font-size:9px;color:#636366;text-transform:uppercase;letter-spacing:.06em;">Fixed</span></div>' +
+            '<div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#FF9F0A;"></div><span style="font-size:9px;color:#636366;text-transform:uppercase;letter-spacing:.06em;">Variable</span></div>' +
+            '<div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#2E6B3E;"></div><span style="font-size:9px;color:#636366;text-transform:uppercase;letter-spacing:.06em;">Remaining</span></div>' +
+            '</div>' +
             '<div class="pulse-labels">' +
             '<div class="pulse-lbl">' +
                 '<div class="pulse-lbl-name">Take-Home</div>' +
@@ -3558,103 +3563,127 @@ function clearSynced() {
             '<div class="dash-month">' + (d.month||"") + '</div>' +
             celebH + kpiH + weekH + catH + cardBalH + txnH + goalH + portH;
 
-        // ── ANIMATE ───────────────────────────────────────────────────────────
-        // Cards stagger in
-        var cardIds = ["dc-celeb","dc-pulse","dc-week","dc-cat","dc-cards","dc-txn","dc-goals","dc-port"];
-        cardIds.forEach(function(id, i) {
+        // ── ANIMATE — IntersectionObserver triggers on scroll into view ────────
+        // Each card animates its own content when it enters the viewport
+
+        function animateCard(card, cardKey) {
+            var done = false;
+            var obs = new IntersectionObserver(function(entries) {
+                if (done) return;
+                entries.forEach(function(entry) {
+                    if (!entry.isIntersecting) return;
+                    done = true;
+                    obs.disconnect();
+                    card.classList.add("visible");
+
+                    if (cardKey === "pulse") {
+                        // Stacked bar segments
+                        setTimeout(function() {
+                            var ps1 = document.getElementById("pseg-fixed");
+                            var ps2 = document.getElementById("pseg-var");
+                            var ps3 = document.getElementById("pseg-unexp");
+                            var ps4 = document.getElementById("pseg-rem");
+                            if (ps1) { ps1.style.transition = "width .9s cubic-bezier(.4,0,.2,1)"; ps1.style.width = fixedPct.toFixed(1) + "%"; }
+                            setTimeout(function() {
+                                if (ps2) { ps2.style.transition = "width .85s cubic-bezier(.4,0,.2,1)"; ps2.style.width = varPct.toFixed(1) + "%"; }
+                            }, 150);
+                            setTimeout(function() {
+                                if (ps3) { ps3.style.transition = "width .8s cubic-bezier(.4,0,.2,1)"; ps3.style.width = unexpPct.toFixed(1) + "%"; }
+                                if (ps4) { ps4.style.transition = "width .8s cubic-bezier(.4,0,.2,1)"; ps4.style.width = remPct.toFixed(1) + "%"; }
+                            }, 280);
+                        }, 120);
+                        // Count-up numbers
+                        setTimeout(function() {
+                            countUp(document.getElementById("pv-takehome"), takeHome,  900, "", "", false);
+                            countUp(document.getElementById("pv-fixed"),    fixedExp,  900, "", "", true);
+                            countUp(document.getElementById("pv-var"),      varSpend,  900, "", "", true);
+                            countUp(document.getElementById("pv-rem"),      Math.abs(rem), 900, "", "", rem < 0);
+                        }, 200);
+
+                    } else if (cardKey === "week") {
+                        // Arc fill
+                        setTimeout(function() {
+                            var arcEl = document.getElementById("arc-progress");
+                            if (arcEl) {
+                                var fillLen = (CIRC * arcPct).toFixed(2);
+                                var gapLen  = (CIRC - CIRC * arcPct).toFixed(2);
+                                arcEl.setAttribute("stroke-dasharray", fillLen + " " + gapLen);
+                            }
+                            countUp(document.getElementById("arc-rem-val"), arcRemaining, 900, "", "", false);
+                        }, 200);
+                        // Other week bars
+                        setTimeout(function() {
+                            weeks.forEach(function(w, i) {
+                                if (i === wIdx) return;
+                                var el = document.getElementById("wkbar-" + i);
+                                if (!el) return;
+                                var pct2 = w.allowance > 0 ? Math.min((Math.abs(w.actual)/w.allowance)*100, 100) : 0;
+                                setTimeout(function() { animBar(el, pct2, 0); }, i * 80);
+                            });
+                        }, 350);
+
+                    } else if (cardKey === "cat") {
+                        setTimeout(function() {
+                            cats.forEach(function(c, i) {
+                                var el = document.getElementById("catb-" + i);
+                                var bp = (Math.abs(c.amount)/maxA*100);
+                                setTimeout(function() { animBar(el, bp, 0); }, i * 80);
+                            });
+                        }, 150);
+
+                    } else if (cardKey === "cards") {
+                        setTimeout(function() {
+                            cardBals.forEach(function(cb, ci) {
+                                if (cb.limit > 0) {
+                                    var el = document.getElementById("utilb-" + ci);
+                                    var utilPct = Math.min(Math.abs(cb.balance) / cb.limit * 100, 100);
+                                    setTimeout(function() { animBar(el, utilPct, 0); }, ci * 100);
+                                }
+                            });
+                        }, 150);
+
+                    } else if (cardKey === "goals") {
+                        setTimeout(function() {
+                            goals.forEach(function(g, gi) {
+                                var el = document.getElementById("goalb-" + gi);
+                                var pct = Math.min((g.pct||0)*100, 100);
+                                setTimeout(function() { animBar(el, pct, 0); }, gi * 120);
+                            });
+                        }, 150);
+
+                    } else if (cardKey === "port") {
+                        setTimeout(function() {
+                            var pgb = document.getElementById("port-gain-bar");
+                            if (pgb) animBar(pgb, Math.min(gainPct, 100), 0);
+                            (port.holdings||[]).forEach(function(h, hi) {
+                                var el = document.getElementById("hldc-" + hi);
+                                if (el) setTimeout(function() { el.classList.add("visible"); }, hi * 80);
+                            });
+                        }, 150);
+                    }
+                });
+            }, { threshold: 0.15 });
+            obs.observe(card);
+        }
+
+        // Wire up each card
+        var cardMap = {
+            "dc-pulse": "pulse",
+            "dc-week":  "week",
+            "dc-cat":   "cat",
+            "dc-cards": "cards",
+            "dc-goals": "goals",
+            "dc-port":  "port"
+        };
+        Object.keys(cardMap).forEach(function(id) {
             var el = document.getElementById(id);
-            if (el) revealCard(el, i * 80);
+            if (el) animateCard(el, cardMap[id]);
         });
-
-        // Monthly pulse bars (stagger after card reveals)
-        var BASE_DELAY = 200;
-        setTimeout(function() {
-            var ps1 = document.getElementById("pseg-fixed");
-            var ps2 = document.getElementById("pseg-var");
-            var ps3 = document.getElementById("pseg-unexp");
-            var ps4 = document.getElementById("pseg-rem");
-            if (ps1) { ps1.style.transition = "width .6s cubic-bezier(.4,0,.2,1)"; ps1.style.width = fixedPct.toFixed(1) + "%"; }
-            setTimeout(function() {
-                if (ps2) { ps2.style.transition = "width .55s cubic-bezier(.4,0,.2,1)"; ps2.style.width = varPct.toFixed(1) + "%"; }
-            }, 100);
-            setTimeout(function() {
-                if (ps3) { ps3.style.transition = "width .5s cubic-bezier(.4,0,.2,1)"; ps3.style.width = unexpPct.toFixed(1) + "%"; }
-                if (ps4) { ps4.style.transition = "width .5s cubic-bezier(.4,0,.2,1)"; ps4.style.width = remPct.toFixed(1) + "%"; }
-            }, 180);
-        }, BASE_DELAY);
-
-        // Arc animate
-        setTimeout(function() {
-            var arcEl = document.getElementById("arc-progress");
-            if (arcEl) {
-                var fillLen = (CIRC * arcPct).toFixed(2);
-                var gapLen  = (CIRC - CIRC * arcPct).toFixed(2);
-                arcEl.setAttribute("stroke-dasharray", fillLen + " " + gapLen);
-            }
-        }, BASE_DELAY + 200);
-
-        // Other week bars
-        setTimeout(function() {
-            weeks.forEach(function(w, i) {
-                if (i === wIdx) return;
-                var el = document.getElementById("wkbar-" + i);
-                if (!el) return;
-                var pct2 = w.allowance > 0 ? Math.min((Math.abs(w.actual)/w.allowance)*100, 100) : 0;
-                animBar(el, pct2, 0);
-            });
-        }, BASE_DELAY + 300);
-
-        // Category bars
-        setTimeout(function() {
-            cats.forEach(function(c, i) {
-                var el = document.getElementById("catb-" + i);
-                var bp = (Math.abs(c.amount)/maxA*100);
-                animBar(el, bp, i * 60);
-            });
-        }, BASE_DELAY + 400);
-
-        // Card utilization bars
-        setTimeout(function() {
-            cardBals.forEach(function(cb, ci) {
-                if (cb.limit > 0) {
-                    var el = document.getElementById("utilb-" + ci);
-                    var utilPct = Math.min(Math.abs(cb.balance) / cb.limit * 100, 100);
-                    animBar(el, utilPct, ci * 80);
-                }
-            });
-        }, BASE_DELAY + 350);
-
-        // Goal bars
-        setTimeout(function() {
-            goals.forEach(function(g, gi) {
-                var el = document.getElementById("goalb-" + gi);
-                var pct = Math.min((g.pct||0)*100, 100);
-                animBar(el, pct, gi * 100);
-            });
-        }, BASE_DELAY + 500);
-
-        // Portfolio gain bar (shows gain as % of total value)
-        setTimeout(function() {
-            var pgb = document.getElementById("port-gain-bar");
-            if (pgb) animBar(pgb, Math.min(gainPct, 100), 0);
-        }, BASE_DELAY + 600);
-
-        // Holding cards stagger in
-        setTimeout(function() {
-            (port.holdings||[]).forEach(function(h, hi) {
-                var el = document.getElementById("hldc-" + hi);
-                if (el) setTimeout(function() { el.classList.add("visible"); }, hi * 60);
-            });
-        }, BASE_DELAY + 650);
-
-        // Count-up for key numbers
-        setTimeout(function() {
-            countUp(document.getElementById("pv-takehome"), takeHome, 700, "", "", false);
-            countUp(document.getElementById("pv-fixed"),    fixedExp,  700, "", "", true);
-            countUp(document.getElementById("pv-var"),      varSpend,  700, "", "", true);
-            countUp(document.getElementById("pv-rem"),      Math.abs(rem), 700, "", "", rem < 0);
-            countUp(document.getElementById("arc-rem-val"), arcRemaining, 700, "", "", false);
-        }, BASE_DELAY + 100);
+        // Celebration and transactions just fade in immediately (no bars)
+        ["dc-celeb","dc-txn"].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) setTimeout(function() { el.classList.add("visible"); }, 100);
+        });
     }
     // Auto-load on first switch to dashboard
     (function() {
