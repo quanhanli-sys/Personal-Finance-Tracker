@@ -3817,9 +3817,9 @@ function clearSynced() {
             seen[k] = true;
             chips.push(t);
         }
-        if (chips.length === 0) return;
         var row = document.getElementById("chipsRow");
         var wrap = document.getElementById("chipsWrap");
+        if (chips.length === 0) { if (wrap) wrap.style.display = "none"; return; }
         if (!row || !wrap) return;
         row.innerHTML = chips.map(function(t, i) {
             var amt = Math.abs(t.amount);
