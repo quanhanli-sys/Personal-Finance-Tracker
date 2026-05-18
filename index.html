@@ -3840,8 +3840,15 @@ function clearSynced() {
         var chips = window._chipData || [];
         var t = chips[idx];
         if (!t) return;
-        // Set type to Expense
-        setType("Expense");
+        // Stay on current type — don't force-switch tabs
+        // The backend handles Unexpected Expense/Income correctly regardless of UI type
+        // Only call setType if we need to change (e.g. chip from a different type context)
+        // For Transfer tab showing Unexpected Expense chips, stay on Transfer
+        var targetType = state.type; // keep current type
+        if (t.category !== "Unexpected Expense" && t.category !== "Unexpected Income") {
+            targetType = "Expense"; // regular expense chip always sets Expense
+        }
+        if (targetType !== state.type) setType(targetType);
         // Set amount (positive display, negative stored)
         var absAmt = Math.abs(t.amount);
         state.amount = absAmt.toString();
