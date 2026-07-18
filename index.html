@@ -1876,11 +1876,6 @@
                 if (qq[x].id === entry.id) { qq[x].status = r && r.success ? "synced" : "failed"; break; }
             }
             saveQueue(qq);
-            // Auto-clear synced entries after each successful sync
-            if (r && r.success) {
-                var cleaned = getQueue().filter(function(e) { return e.status !== "synced"; });
-                saveQueue(cleaned);
-            }
             // Re-render queue if sync sheet is open
             if (document.getElementById("syncSheet").classList.contains("open")) renderSyncQueue();
             // Surface sell gain/loss result when it comes back
@@ -1891,7 +1886,18 @@
                 showToast(glStr + " " + (gl >= 0 ? "gain" : "loss") + " on " + entry.payload.ticker,
                           gl >= 0 ? "success" : "error");
             }
-            processNextInQueue(i + 1, pending, getQueue());
+            // Process next — after all items done, clear synced entries
+            if (i + 1 >= pending.length) {
+                // All done — clear synced items and do a final render
+                setTimeout(function() {
+                    var cleaned = getQueue().filter(function(e) { return e.status !== "synced"; });
+                    saveQueue(cleaned);
+                    if (document.getElementById("syncSheet").classList.contains("open")) renderSyncQueue();
+                    updateSyncBadge();
+                }, 800);
+            } else {
+                processNextInQueue(i + 1, pending, getQueue());
+            }
         };
         var onFail = function() {
             var qq = getQueue();
