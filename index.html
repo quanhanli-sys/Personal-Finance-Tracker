@@ -1856,10 +1856,16 @@
         else { badge.className = "sync-badge"; }
     }
 
+    var _syncedIds = {}; // in-memory dedup: tracks IDs successfully sent this session
+
     function syncNow() {
         var q = getQueue();
-        var pending = q.filter(function(e) { return e.status === "queued" || e.status === "failed"; });
-        if (pending.length === 0) return;
+        var pending = q.filter(function(e) {
+            // Skip anything already confirmed sent this session
+            if (_syncedIds[e.id]) { e.status = "synced"; return false; }
+            return e.status === "queued" || e.status === "failed";
+        });
+        if (pending.length === 0) { saveQueue(getQueue()); return; }
         processNextInQueue(0, pending, q);
     }
 
@@ -1873,7 +1879,11 @@
         var onSuccess = function(r) {
             var qq = getQueue();
             for (var x = 0; x < qq.length; x++) {
-                if (qq[x].id === entry.id) { qq[x].status = r && r.success ? "synced" : "failed"; break; }
+                if (qq[x].id === entry.id) {
+                    qq[x].status = r && r.success ? "synced" : "failed";
+                    if (r && r.success) _syncedIds[entry.id] = true; // dedup guard
+                    break;
+                }
             }
             saveQueue(qq);
             // Re-render queue if sync sheet is open
@@ -1994,19 +2004,26 @@ function clearSynced() {
         }).join("");
     }
 
-    // Listen for online event — auto-sync when reconnected
+    // Listen for online event — debounced 2s to avoid firing on momentary flickers
+    var _onlineDebounce = null;
     window.addEventListener("online", function() {
-        if (getAutoSync()) syncNow();
+        clearTimeout(_onlineDebounce);
+        _onlineDebounce = setTimeout(function() {
+            if (getAutoSync()) syncNow();
+        }, 2000);
     });
 
     // ══════════════════════════════════════════════════════════
     // SAVE — TRANSACTION
     // ══════════════════════════════════════════════════════════
     function saveTransaction() {
+        var btn = document.getElementById("txnSaveBtn");
+        if (btn && btn.disabled) return; // guard against double-tap
+        if (btn) btn.disabled = true;
         var amt = parseFloat(state.amount);
-        if (!amt || amt <= 0) { showToast("Enter an amount","error"); return; }
+        if (!amt || amt <= 0) { showToast("Enter an amount","error"); if (btn) btn.disabled = false; return; }
         var date = document.getElementById("txnDateInput").value;
-        if (!date) { showToast("Select a date","error"); return; }
+        if (!date) { showToast("Select a date","error"); if (btn) btn.disabled = false; return; }
 
         var isExpense  = state.type === "Expense";
         var isIncome   = state.type === "Income";
@@ -2048,6 +2065,8 @@ function clearSynced() {
         clearForm();
         showToast(toastMsg, finalAmt < 0 ? "" : "success");
         enqueue("transaction", payload);
+        // Re-enable after short delay so clearForm() resets state first
+        setTimeout(function() { var b = document.getElementById("txnSaveBtn"); if (b) b.disabled = false; }, 500);
     }
 
     // ══════════════════════════════════════════════════════════
