@@ -1860,9 +1860,21 @@
 
     function syncNow() {
         var q = getQueue();
+        // Reset any "sending" items — they were interrupted mid-flight
+        // Wait 5s before retrying interrupted items to avoid false duplicates
+        var now = Date.now();
+        q.forEach(function(e) {
+            if (e.status === "sending" || e.status === "syncing") {
+                var age = now - new Date(e.timestamp).getTime();
+                if (age > 30000) { // only retry if in-flight for > 30s — assumes failed
+                    e.status = "queued";
+                }
+            }
+        });
+        saveQueue(q);
         var pending = q.filter(function(e) {
-            // Skip anything already confirmed sent this session
             if (_syncedIds[e.id]) { e.status = "synced"; return false; }
+            if (e.status === "syncing") return false; // currently in-flight, skip
             return e.status === "queued" || e.status === "failed";
         });
         if (pending.length === 0) { saveQueue(getQueue()); return; }
@@ -1918,25 +1930,34 @@
             // Stop processing on failure — don't skip ahead
         };
 
+        // Hard timeout — if gsr() doesn't resolve in 15s (e.g. app backgrounded
+        // underground), force onFail so the item resets to "failed" and retries later
+        var _gsrResolved = false;
+        var _gsrTimeout = setTimeout(function() {
+            if (!_gsrResolved) { _gsrResolved = true; onFail(); }
+        }, 15000);
+
+        var wrappedSuccess = function(r) { if (_gsrResolved) return; _gsrResolved = true; clearTimeout(_gsrTimeout); onSuccess(r); };
+        var wrappedFail    = function()  { if (_gsrResolved) return; _gsrResolved = true; clearTimeout(_gsrTimeout); onFail(); };
+
         try {
             if (entry.type === "transaction") {
-                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(wrappedSuccess).withFailureHandler(wrappedFail)
                     .saveTransaction(entry.payload);
             } else if (entry.type === "assetTrade") {
-                // tradeTimestamp passed in payload — server resolves historical price silently
-                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(wrappedSuccess).withFailureHandler(wrappedFail)
                     .saveAssetTrade(entry.payload);
             } else if (entry.type === "assetUpdate") {
-                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(wrappedSuccess).withFailureHandler(wrappedFail)
                     .saveAssetUpdate(entry.payload);
             } else if (entry.type === "assetImport") {
-                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(wrappedSuccess).withFailureHandler(wrappedFail)
                     .importAssetTrades(entry.payload);
             } else if (entry.type === "import") {
-                gsr().withSuccessHandler(onSuccess).withFailureHandler(onFail)
+                gsr().withSuccessHandler(wrappedSuccess).withFailureHandler(wrappedFail)
                     .importHistoricalData(entry.payload);
             }
-        } catch(e) { onFail(); }
+        } catch(e) { wrappedFail(); }
     }
 
 
@@ -3744,6 +3765,17 @@ function clearSynced() {
 
 
     window.onload = function() {
+        // On load: reset any stale "sending" items from a previous interrupted session
+        var loadQ = getQueue();
+        var loadNow = Date.now();
+        var loadChanged = false;
+        loadQ.forEach(function(e) {
+            if (e.status === "sending" || e.status === "syncing") {
+                var age = loadNow - new Date(e.timestamp).getTime();
+                if (age > 30000) { e.status = "queued"; loadChanged = true; }
+            }
+        });
+        if (loadChanged) saveQueue(loadQ);
         // Init Lucide icons
         var today = localDateStr();
         document.getElementById("txnDateInput").value    = today;
